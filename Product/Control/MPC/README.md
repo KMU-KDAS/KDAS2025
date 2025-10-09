@@ -35,7 +35,7 @@ In addition, speed and other dynamic variables were predicted using a **pre-trai
 
 ---
 
-🖼️ **Insert Image Placeholder:** `MPC_Pipeline.png`  
+<img src="images/MPC1.png" alt="MPC1" width="300"/>
 *(Place here the overall data-processing pipeline diagram, e.g. LiDAR → SLAM → KF → MATLAB → LSTM → MPC → Control)*
 
 ---
