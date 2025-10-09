@@ -35,7 +35,8 @@ In addition, speed and other dynamic variables were predicted using a **pre-trai
 
 ---
 
-<img src="images/MPC1.png" alt="MPC1" width="300"/>
+<img src="../../../images/MPC1.png" alt="MPC Pipeline" width="700"/>
+
 *(Place here the overall data-processing pipeline diagram, e.g. LiDAR → SLAM → KF → MATLAB → LSTM → MPC → Control)*
 
 ---
@@ -96,8 +97,6 @@ Determines how much to penalize **control effort** (steering, throttle).
 
 ## 📊 4. Results and Analysis
 
-🖼️ **Insert Image Placeholder:** `MPC_Results_Graph.png`  
-*(Include experimental vs. predicted trajectory comparison figure.)*
 
 The experimental track was narrow and contained several high-curvature segments.  
 Despite these challenges, the designed control framework achieved **smooth, stable driving** without lane departure.
@@ -118,33 +117,5 @@ but heavily depends on:
 Ultimately, the MPC module was **excluded from the final competition deployment**, as the baseline controller already achieved sufficient accuracy.  
 This decision reflects a **pragmatic balance between reliability and complexity** under real-world constraints.
 
----
 
-## 🔍 5. Limitations and Future Work
-
-| **Limitation** | **Impact** | **Planned Solution** |
-|----------------|-------------|----------------------|
-| LSTM generalization gap | Caused state-prediction mismatch | Re-train with diverse track datasets |
-| Sensor timestamp desync | Induced signal misalignment | Apply time-synchronization correction node |
-| Real-time computation latency | Delayed control updates | Optimize matrix operations in MPC solver |
-| Simplified dynamic model | Limited curvature prediction | Extend to Nonlinear MPC with full bicycle model |
-
----
-
-## ✅ 6. Summary
-
-- **MPC was applied on a real-scale autonomous platform**, combining **SLAM, Kalman Filter, and LSTM prediction**.  
-- **Constraint-based control** improved safety under nonlinear conditions, though performance gain was modest.  
-- The findings highlight the **importance of synchronization, data fidelity, and hybrid model design** over algorithmic complexity.  
-- Future work aims to develop an **Adaptive Nonlinear MPC** framework with real-time noise compensation and dynamic parameter tuning.
-
----
-
-## 🖼️ 7. Recommended Image Placement Summary
-
-| Section | Image File | Description |
-|----------|-------------|-------------|
-| 2 | `MPC_Pipeline.png` | Overall data-processing pipeline diagram |
-| 3 | `MPC_Cost_Function.png` | Cost function and Q/R matrix visualization |
-| 4 | `MPC_Results_Graph.png` | Comparison of raw vs. MPC-corrected trajectories |
 
