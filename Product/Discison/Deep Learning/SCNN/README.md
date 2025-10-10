@@ -1,4 +1,4 @@
-# **SCNN-Based Lane Detection for 1/10-Scale Autonomous Driving**
+# **SCNN-Based Lane Detection**
 
 ---
 
@@ -7,7 +7,7 @@
 This project implements a lane detection system using **SCNN (Spatial CNN)** for both a 1/10-scale autonomous platform and the QLabs simulation environment.  
 Instead of reusing off-the-shelf code, we rebuilt the entire pipeline — **dataset construction, training pipeline, post-processing, depth projection, and waypoint generation** — so that the output can be fed directly into a driving controller.
 
-<img src="../../../images/SCNN1.gif" alt="SCNN Overview" width="800"/>
+<img src="../../../../images/SCNN1.gif" alt="SCNN Overview" width="800"/>
 
 **Motivation.** Classical OpenCV-based lane detection struggled under illumination changes, sharp curvature, and lane discontinuities. SCNN was chosen because its **row/column message passing** preserves line continuity and handles curves more robustly.
 
@@ -18,7 +18,7 @@ Instead of reusing off-the-shelf code, we rebuilt the entire pipeline — **data
 OpenCV (thresholding/edge + Hough) is sensitive to noise and texture changes, making it unreliable for real driving.  
 SCNN’s spatial message passing aggregates features along rows/columns, improving continuity on curved lanes and broken markings.
 
-<img src="../../../images/SCNN2.png" alt="SCNN vs Classical Vision" width="800"/>
+<img src="../../../../images/SCNN2.png" alt="SCNN vs Classical Vision" width="800"/>
 
 ---
 
@@ -32,7 +32,7 @@ We therefore adopted **transfer learning**:
 - Compare three strategies: keep VGG16 backbone only, unfreeze progressively, and full fine-tuning.  
   The best compromise: reuse early VGG16 layers, **fine-tune upper layers** on our domain-specific data.
 
-<img src="../../../images/SCNN3.png" alt="Transfer Learning Strategy" width="800"/>
+<img src="../../../../images/SCNN3.png" alt="Transfer Learning Strategy" width="800"/>
 
 ---
 
@@ -41,7 +41,7 @@ We therefore adopted **transfer learning**:
 During training we visualized intermediate **feature maps** to see how layers responded.  
 After fine-tuning with our dataset, **later layers** reacted strongly to lane edges and curvature while **early layers** remained similar — confirming our transfer strategy.
 
-<img src="../../../images/SCNN4.png" alt="Feature Maps Before/After Fine-tuning" width="800"/>
+<img src="../../../../images/SCNN4.png" alt="Feature Maps Before/After Fine-tuning" width="800"/>
 
 ---
 
@@ -54,7 +54,7 @@ Binary masks are label-efficient, work naturally with SCNN’s segmentation head
 2. Convert centerline pixels to metric coordinates via **Depth projection**.  
 3. Generate **(x, y) waypoint** sequences for the controller (e.g., Pure Pursuit/Stanley).
 
-<img src="../../../images/SCNN5.png" alt="Binary Mask to Centerline and Waypoints" width="800"/>
+<img src="../../../../images/SCNN5.png" alt="Binary Mask to Centerline and Waypoints" width="800"/>
 
 ---
 
@@ -79,7 +79,7 @@ We reimplemented the entire training stack for our dataset (images + binary mask
 **Metrics**
 - **mIoU** on validation/test sets
 
-<img src="../../../images/SCNN6.png" alt="Training Pipeline" width="800"/>
+<img src="../../../../images/SCNN6.png" alt="Training Pipeline" width="800"/>
 
 ---
 
@@ -98,7 +98,7 @@ We reimplemented the entire training stack for our dataset (images + binary mask
 **Update**
 - Optimizer step; learning-rate schedule optional
 
-<img src="../../../images/SCNN7.png" alt="Forward/Backward and Optimization" width="800"/>
+<img src="../../../../images/SCNN7.png" alt="Forward/Backward and Optimization" width="800"/>
 
 ---
 
@@ -113,7 +113,7 @@ To stabilize detection and produce control-ready centerlines:
 5. **Centerline** – evaluate both polynomials on a common y-grid and average x  
 6. **Spline interpolation & smoothing** – produce a smooth centerline for control
 
-<img src="../../../images/SCNN8.png" alt="Post-processing Steps" width="800"/>
+<img src="../../../../images/SCNN8.png" alt="Post-processing Steps" width="800"/>
 
 > Result: The centerline and waypoints are smooth along curves and stable enough for direct use by the controller.
 
@@ -125,7 +125,7 @@ We project the (center/centerline) pixels to **3D camera coordinates** using dep
 
 Note: The algorithm was implemented and validated conceptually; however, QLabs’ depth module had official constraints that prevented full simulator deployment. The mapping works on real depth sensors (e.g., **RealSense D435i**).
 
-<img src="../../../images/SCNN9.png" alt="Depth to Vehicle Coordinates" width="800"/>
+
 
 ---
 
@@ -133,12 +133,13 @@ Note: The algorithm was implemented and validated conceptually; however, QLabs�
 
 **Quantitative**
 - Validation **IoU ≈ 0.84–0.86** after stable convergence (train/val loss decreasing).
+<img src="../../../../images/SCNN9.png" alt="Depth to Vehicle Coordinates" width="800"/>
 
 **Qualitative**
 - Robust detection on tight curves; centerline remains continuous after post-processing.  
 - On real and simulated tracks, **centerline-based steering** achieved **no lane departures**.
 
-<img src="../../../images/SCNN10.gif" alt="Quantitative and Qualitative Results" width="800"/>
+<img src="../../../../images/SCNN10.gif" alt="Quantitative and Qualitative Results" width="800"/>
 
 **Controller Integration**
 - The SCNN centerline was fed to a PID/geometry-based controller (see **XYTRON PID** section) and yielded smooth lane-center driving.
@@ -154,5 +155,5 @@ Future directions:
 - Integrate with **MPC** for constraint-aware planning and control  
 - Expand datasets and fine-tune higher layers further for extreme edge cases
 
-<img src="../../../images/SCNN11.gif" alt="Conclusion and Future Directions" width="800"/>
+<img src="../../../../images/SCNN11.gif" alt="Conclusion and Future Directions" width="800"/>
 
