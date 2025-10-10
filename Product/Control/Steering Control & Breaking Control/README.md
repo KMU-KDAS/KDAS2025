@@ -105,8 +105,15 @@ A sine-wave path was generated in MATLAB to verify Stanley control performance â
 to confirm correct waypoint tracking, and the proper handling of stop/resume transitions.
 
 ### 4.1 Path Generation
-<img src="../../../images/control8.png" alt="Sine Path Generation" width="800"/>
-<p align="center"><b>Generated sine path used as trajectory input</b></p>
+
+<img src="../../../images/control20.png" alt="Sine Path Generation" width="400"/><br/>
+<b>Sine Path Generation</b>
+      
+<img src="../../../images/control8.png" alt="Path Generation model" width="400"/><br/>
+<b>Path Generation model</b>
+
+
+
 
 ---
 
@@ -156,7 +163,7 @@ All control signals were processed via **zero-order hold** to output discrete co
 This design minimizes excessive motor stress and ensures safe actuator operation.  
 Through Simulink scopes, all control variables were verified to behave normally.
 
-<img src="../../../images/control13.png" alt="Zero Order Hold Verification" width="800"/>
+<img src="../../../images/control13.png" alt="Zero Order Hold Verification" width="400"/>
 
 ---
 
@@ -180,7 +187,7 @@ $$
 
 (Reference: [ShuffleAI Blog](https://www.shuffleai.blog/blog/Three_Methods_of_Vehicle_Lateral_Control.html))
 
-<img src="../../../images/control14.png" alt="Pure Pursuit Control Law" width="800"/>
+<img src="../../../images/control14.png" alt="Pure Pursuit Control Law" width="400"/>
 
 The controller computes the curvature toward the **look-ahead point**,  
 producing smooth trajectories and robust high-speed tracking.  
