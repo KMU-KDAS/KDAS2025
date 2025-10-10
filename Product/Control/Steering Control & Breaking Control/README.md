@@ -16,19 +16,30 @@ and unstable output spikes frequently occurred at high speeds.
 
 To analyze control stability, performance comparisons were made across **PID, Pure Pursuit, and Stanley controllers** at both **high** and **low speeds**.
 
-### High-Speed Performance
-<img src="../../../images/control1.png" alt="High-speed PID Δx" width="800"/>
-<p align="center"><b>High-speed PID Δx</b></p>
+### PID, Pure Pursuit, Stanley — Image Comparison (2×2)
 
-<img src="../../../images/control2.png" alt="High-speed PID ΔSteering Angle" width="800"/>
-<p align="center"><b>High-speed PID ΔSteering Angle</b></p>
-
-### Low-Speed Performance
-<img src="../../../images/control3.png" alt="Low-speed PID Δx" width="800"/>
-<p align="center"><b>Low-speed PID Δx</b></p>
-
-<img src="../../../images/control4.png" alt="Low-speed PID ΔSteering Angle" width="800"/>
-<p align="center"><b>Low-speed PID ΔSteering Angle</b></p>
+<table>
+  <tr>
+    <td align="center">
+      <img src="../../../images/control1.png" alt="High-speed PID Δx" width="400"/><br/>
+      <b>High-speed PID Δx</b>
+    </td>
+    <td align="center">
+      <img src="../../../images/control2.png" alt="High-speed PID ΔSteering Angle" width="400"/><br/>
+      <b>High-speed PID ΔSteering Angle</b>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="../../../images/control3.png" alt="Low-speed PID Δx" width="400"/><br/>
+      <b>Low-speed PID Δx</b>
+    </td>
+    <td align="center">
+      <img src="../../../images/control4.png" alt="Low-speed PID ΔSteering Angle" width="400"/><br/>
+      <b>Low-speed PID ΔSteering Angle</b>
+    </td>
+  </tr>
+</table>
 
 In low-speed environments (see [Xytron Simulator](#)),  
 the PID controller showed relatively stable behavior.  
@@ -213,9 +224,21 @@ To enhance performance, two main strategies were applied:
 After implementing these improvements,  
 the system exhibited reduced output spikes and maintained smooth motion.
 
-<img src="../../../images/control18.gif" alt="Improved Tracking Results" width="800"/>
+### Improved Tracking — Side-by-side GIFs
 
-<img src="../../../images/control19.gif" alt="Final Simulation Results" width="800"/>
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <img src="../../../images/control18.gif" alt="Improved Tracking Results" width="400"/><br/>
+      <b>Improved Tracking Results</b>
+    </td>
+    <td align="center" valign="top">
+      <img src="../../../images/control19.gif" alt="Final Simulation Results" width="400"/><br/>
+      <b>Final Simulation Results</b>
+    </td>
+  </tr>
+</table>
+
 
 Both **simulation and real-world experiments** confirmed that Pure Pursuit achieved stable performance across low- and high-speed, curved, and straight sections.  
 Adaptive look-ahead tuning and saturation settings significantly reduced steering jitter and improved driving stability.
