@@ -224,7 +224,6 @@ To enhance performance, two main strategies were applied:
 After implementing these improvements,  
 the system exhibited reduced output spikes and maintained smooth motion.
 
-### Improved Tracking — Side-by-side GIFs
 
 <table>
   <tr>
