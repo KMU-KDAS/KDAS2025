@@ -12,11 +12,11 @@ and unstable output spikes frequently occurred at high speeds.
 
 ---
 
-## 2. PID, Pure Pursuit, and Stanley Comparative Analysis
+## 2. PID Control Analysis
 
-To analyze control stability, performance comparisons were made across **PID, Pure Pursuit, and Stanley controllers** at both **high** and **low speeds**.
+To analyze control stability, performance comparisons were made across **PID** at both **high** and **low speeds**.
 
-### PID, Pure Pursuit, Stanley — Image Comparison (2×2)
+### PID stability table
 
 <table>
   <tr>
