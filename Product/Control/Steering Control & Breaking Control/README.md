@@ -2,143 +2,237 @@
 
 ---
 
-## 1. Introduction and Motivation
+## 1. Introduction and Background
 
-In early stages (AEB simulation, Xytron simulation), we implemented autonomous driving with a **PID controller**.  
-However, the **Xytron competition** and **QLabs** demanded **high-speed driving**, **tight curves**, and **obstacle sections** simultaneously.  
-Under these conditions, PID tuning alone could not guarantee stability; at higher speeds the output often spiked, degrading control performance.
-
-To address this, we studied and implemented **Stanley** and **Pure Pursuit** controllers — both computationally efficient and robust for high-speed path tracking.
-
-<img src="../../../images/Control1.png" alt="PID vs Pure Pursuit vs Stanley Concept" width="800"/>
+In the early development stages (AEB System simulation, Xytron simulation),  
+autonomous driving was implemented using a **PID controller**.  
+However, both the **Xytron competition** and **QLabs environment** required high-speed driving, tight curves, and obstacle sections simultaneously.  
+Under such conditions, the PID controller could not ensure stable performance through gain tuning alone,  
+and unstable output spikes frequently occurred at high speeds.
 
 ---
 
-## 2. Comparative Analysis: PID vs. Pure Pursuit vs. Stanley
+## 2. PID, Pure Pursuit, and Stanley Comparative Analysis
 
-- **PID**: simple and responsive at **low speed**, but prone to oscillation and gain sensitivity at **high speed**, especially in sharp curves or noisy signals.  
-- **Stanley**: uses **heading error** and **lateral (cross-track) error** for geometric path tracking; strong lane-centering even on curves.  
-- **Pure Pursuit**: computes curvature to the **look-ahead point**; simple, smooth paths at high speed; performance sensitive to look-ahead choice.
+To analyze control stability, performance comparisons were made across **PID, Pure Pursuit, and Stanley controllers** at both **high** and **low speeds**.
 
-<img src="../../../images/Control2.png" alt="Controller Comparison Overview" width="800"/>
+### High-Speed Performance
+<img src="../../../images/control1.png" alt="High-speed PID Δx" width="800"/>
+<p align="center"><b>High-speed PID Δx</b></p>
+
+<img src="../../../images/control2.png" alt="High-speed PID ΔSteering Angle" width="800"/>
+<p align="center"><b>High-speed PID ΔSteering Angle</b></p>
+
+### Low-Speed Performance
+<img src="../../../images/control3.png" alt="Low-speed PID Δx" width="800"/>
+<p align="center"><b>Low-speed PID Δx</b></p>
+
+<img src="../../../images/control4.png" alt="Low-speed PID ΔSteering Angle" width="800"/>
+<p align="center"><b>Low-speed PID ΔSteering Angle</b></p>
+
+In low-speed environments (see [Xytron Simulator](#)),  
+the PID controller showed relatively stable behavior.  
+However, in the **high-speed** conditions required for the competition, the output fluctuated sharply,  
+and overall driving stability degraded significantly.  
+This demonstrated that manual gain tuning was **inefficient and unreliable**, motivating the adoption of new controllers.  
+We therefore investigated the **Stanley** and **Pure Pursuit** controllers—both known for their stability, efficiency, and low computational cost.
 
 ---
 
 ## 3. Stanley Controller
 
-**Principle.** Stanley corrects both **heading error** and **lateral error** relative to the reference centerline.  
-We used **SCNN-based lane centerline** (depth-projected coordinates) as input when available, calculating steering to reduce both errors simultaneously.
+### 3.1 Control Law
+The Stanley controller computes steering angle δ as:
 
-**Pros**
-- Robust lane-centering on curves  
-- Uses geometric information and vehicle heading
+$$
+\delta = \phi(t) + \tan^{-1}\left(\frac{k e(t)}{v_f(t)}\right)
+$$
 
-**Cons**
-- Can be overly aggressive at very low speed  
-- Parameter **k** tuning is non-trivial
+(Reference: [Robotics StackExchange](https://robotics.stackexchange.com/questions/22989/what-is-wrong-with-my-stanley-controller-for-car-steering-control))
 
-<img src="../../../images/Control3.png" alt="Stanley Controller Geometry" width="800"/>
+<img src="../../../images/control5.png" alt="Stanley Control Law" width="800"/>
 
----
-
-## 4. Event Handling with Stateflow (Quanser Prelim Spec)
-
-We modeled stopping events in **Stateflow** to satisfy competition rules:
-
-1) **Sign/Signal-based stop** (YOLO integration)  
-- YOLO detects traffic light / stop sign → publishes a ROS flag  
-- Stateflow transitions to **Stopping** when `stopsign == 1`, sets `output_speed = 0`, waits for `after(t_sec)`, then resumes
-
-2) **Coordinate-based stop** (CoorStop)  
-- MATLAB function computes Euclidean distance to next stop target  
-- If condition `(stopIndex <= numStops) && (distance_to_target < threshold)` holds → transition to **CoorStop**, set `output_speed = 0`, then resume and increment `stopIndex`
-
-<img src="../../../images/Control4.png" alt="Stateflow Stop Logic" width="800"/>
+The Stanley method uses vehicle kinematics, geometric path information, and heading angle to follow the target trajectory.  
+It maintains lane centering effectively even on curved sections by compensating both **heading error** and **lateral error** simultaneously.  
+However, at very low speeds, steering may become overly sensitive, and parameter **k** tuning can be challenging.
 
 ---
 
-## 5. Simulation: Sine-Path Tracking (MATLAB/Simulink)
+### 3.2 Integration with SCNN and Depth-based Coordinates
 
-We generated a **sine-wave path** (waypoints) and validated Stanley tracking performance:
-- Confirmed waypoint tracking stability
-- Verified correct behavior under **stop** and **resume** events
+The Stanley controller used the **SCNN-based lane centerline** and **depth-estimated coordinates** as input.  
+It calculates:
+- **Heading error:** between the vehicle’s forward direction and the tangent of the path.  
+- **Cross-track error:** lateral offset from the centerline.
 
-<img src="../../../images/Control5.png" alt="Sine Path Generation and Tracking" width="800"/>
+By combining both errors, the controller generates the steering command δ, enabling stable trajectory tracking.
 
-### 5.1 Lateral Error (Cross-Track Error)
-
-Multiple error traces appear due to vectorized computations across time and segments;  
-errors stayed within bounds, with slightly larger deviations near the end of the path.
-
-<img src="../../../images/Control6.png" alt="Lateral Error Traces" width="800"/>
-
-### 5.2 Steering Angle Output
-
-We used **zero-order hold** and discrete command intervals to avoid overly sharp steering spikes that could stress the steering actuator.  
-The discretized output is intentional for **hardware safety**.
-
-<img src="../../../images/Control7.png" alt="Discrete Steering Output" width="800"/>
-
-### 5.3 Vehicle Speed Profile
-
-Speed adapts naturally to path curvature — slower on sharp curves and faster on straights — indicating appropriate response to path characteristics.
-
-<img src="../../../images/Control8.png" alt="Speed Profile Along Sine Path" width="800"/>
-
-### 5.4 Stateflow Speed Output (Pulse Stop Event)
-
-At `t = 20s`, a pulse stop command was injected; the controller stopped and then resumed tracking correctly, demonstrating integration with YOLO/coordinate-based stop logic.
-
-<img src="../../../images/Control9.png" alt="Stateflow Speed Output with Stop/Resume" width="800"/>
+<img src="../../../images/control6.png" alt="Stanley Integration with SCNN and Depth" width="800"/>
 
 ---
 
-## 6. From Simulation to Competition Systems
+### 3.3 Stateflow-based Stop Modeling (Quanser Specification)
 
-- In **Xytron Simulator**, overall driving stability was achieved.  
-- In **QLabs**, the organizer reported a **Depth camera issue** in simulation, meaning our planned **SCNN+Depth coordinate** input could not be deployed on-site.  
-- Therefore, for the final system, we adopted **Pure Pursuit** (with SCNN centerline used when feasible in other environments).
+To comply with competition specifications, **Stateflow** was used to model stop events.  
+Two conditions trigger the stop logic:
 
-<img src="../../../images/Control10.png" alt="System Integration across Environments" width="800"/>
+1. **Signal/Sign-based Stop (YOLO integrated)**  
+   - YOLO detects a traffic light or stop sign → sends a ROS flag (`stopsign == 1`).  
+   - Stateflow transitions to **Stopping**, sets `output_speed = 0`, waits `after(t_sec)`, then resumes normal driving.
 
----
+2. **Coordinate-based Stop (CoorStop)**  
+   - MATLAB function `GetStopTarget()` calculates Euclidean distance between current and target positions.  
+   - If `(stopIndex <= numStops)` and `(distance_to_target < threshold)`, transition to **CoorStop** → stop vehicle → resume after delay and increment `stopIndex`.
 
-## 7. Pure Pursuit Controller
-
-**Principle.** Pure Pursuit steers the vehicle toward the **look-ahead point** on the path, computing curvature for smooth tracking.
-
-- **Pros**: simple, effective at high speed, smooth trajectories  
-- **Cons**: error can increase on sharp curves; sensitive to **look-ahead distance**
-
-**System Modeling.** We built a controller centered on the **Pure Pursuit block**:  
-Inputs were vehicle pose `(x, y, θ)` from **Cartographer SLAM** and **waypoints** from the planner; outputs were **linear velocity** and **steering angle**.
-
-<img src="../../../images/Control11.png" alt="Pure Pursuit Model and Look-Ahead Logic" width="800"/>
+<img src="../../../images/control7.png" alt="Stateflow Stop Logic Diagram" width="800"/>
 
 ---
 
-## 8. Performance Improvements and Results
+## 4. Simulation and Verification (MATLAB/Simulink)
 
-**Look-Ahead Distance (adaptive by segment)**
-- Straight: **0.1 m** → reduce unnecessary steering, maintain stable high-speed straight driving  
-- Curve: **3 m** → strengthen curve tracking
+A sine-wave path was generated in MATLAB to verify Stanley control performance —  
+to confirm correct waypoint tracking, and the proper handling of stop/resume transitions.
 
-**Steering Saturation**
-- Straight: **±0.13 rad**  
-- Curve: **±0.35 rad**  
-→ Prevent excessive spikes, ensure robust actuation
-
-**Outcome.** In both simulation and real driving, **Pure Pursuit** provided stable performance at **low and high speeds** and on **curved segments**.  
-Adaptive look-ahead and saturation notably reduced sharp output spikes.
-
-<img src="../../../images/Control12.png" alt="Improved Results: Adaptive Look-Ahead and Saturation" width="800"/>
+### 4.1 Path Generation
+<img src="../../../images/control8.png" alt="Sine Path Generation" width="800"/>
+<p align="center"><b>Generated sine path used as trajectory input</b></p>
 
 ---
 
-## 9. Conclusion
+### 4.2 Lateral Error
+The controller outputs lateral error as a **vector**,  
+since multiple predicted coordinates and error terms are computed across time.  
+Thus, several error curves appear in the scope window.  
+Overall, errors remained within acceptable bounds,  
+with slightly lower accuracy observed near the end of the trajectory.
 
-- We transitioned from **PID** to **Stanley** and **Pure Pursuit** to meet high-speed, tight-curve requirements under noise.  
-- **Stateflow** handled rule-based stops; MATLAB/Simulink validated tracking on sine paths.  
-- Due to QLabs depth issues, the **final competition system** used **Pure Pursuit**, which achieved stable, spike-free control with adaptive parameters.  
-- Future work: restore **SCNN+Depth** input where available, and explore **MPC** once sensor synchronization and compute latency are fully addressed.
+<img src="../../../images/control9.png" alt="Lateral Error" width="800"/>
+<p align="center"><b>Lateral Error Trace</b></p>
 
+---
+
+### 4.3 Steering Angle
+The steering signal was discretized using a **zero-order hold** block, producing stepwise commands.  
+This prevents overly sharp changes that could stress the servo motor and destabilize control.  
+The discrete output thus reflects **hardware-aware design**.
+
+<img src="../../../images/control10.png" alt="Steering Angle Output" width="800"/>
+<p align="center"><b>Discrete Steering Angle Output</b></p>
+
+---
+
+### 4.4 Vehicle Speed
+Vehicle speed adjusted naturally according to path curvature —  
+slower in sharp curves, faster in straight segments — confirming that control output properly reflects curvature sensitivity.
+
+<img src="../../../images/control11.png" alt="Vehicle Speed" width="800"/>
+<p align="center"><b>Vehicle Speed Profile</b></p>
+
+---
+
+### 4.5 Stateflow Speed Output
+At **t = 20s**, a pulse stop signal was injected.  
+The controller correctly stopped and resumed tracking afterward,  
+demonstrating that it handled **YOLO-based** and **coordinate-based** stop logic properly.
+
+<img src="../../../images/control12.png" alt="Stateflow Speed Output" width="800"/>
+<p align="center"><b>Stop and Resume Event</b></p>
+
+---
+
+### 4.6 Zero-Order Hold and Discretization Verification
+All control signals were processed via **zero-order hold** to output discrete command values.  
+This design minimizes excessive motor stress and ensures safe actuator operation.  
+Through Simulink scopes, all control variables were verified to behave normally.
+
+<img src="../../../images/control13.png" alt="Zero Order Hold Verification" width="800"/>
+
+---
+
+## 5. From Simulation to Real System
+
+In the **Xytron simulator**, stable driving performance was achieved overall.  
+However, in **QLabs**, the organizers reported a **Depth Camera malfunction**,  
+preventing the intended **SCNN+Depth** coordinate system from being deployed.  
+As a result, the final system used the **Pure Pursuit** controller for the competition.
+
+---
+
+## 6. Pure Pursuit Controller
+
+### 6.1 Control Law
+The Pure Pursuit steering angle is given by:
+
+$$
+\delta = \tan^{-1}\left(\frac{2L \sin(\alpha)}{l_d}\right)
+$$
+
+(Reference: [ShuffleAI Blog](https://www.shuffleai.blog/blog/Three_Methods_of_Vehicle_Lateral_Control.html))
+
+<img src="../../../images/control14.png" alt="Pure Pursuit Control Law" width="800"/>
+
+The controller computes the curvature toward the **look-ahead point**,  
+producing smooth trajectories and robust high-speed tracking.  
+It is simple and computationally efficient, though **look-ahead distance** tuning strongly affects performance.
+
+---
+
+### 6.2 Simulink Implementation
+The Pure Pursuit block received:
+- **Pose (x, y, θ)** from Cartographer SLAM  
+- **Waypoints** from the global planner  
+
+and output **linear velocity** and **steering angle** commands.
+
+<img src="../../../images/control15.png" alt="Pure Pursuit Simulink Block" width="800"/>
+
+---
+
+## 7. Performance Improvement and Results
+
+To enhance performance, two main strategies were applied:
+
+### 7.1 Adaptive Look-Ahead Distance
+- Straight segments: **0.1 m** → minimizes unnecessary steering, maintains stability at high speed.  
+- Curved segments: **3 m** → improves curve tracking.
+
+<img src="../../../images/control16.png" alt="Adaptive Look-Ahead Distance" width="800"/>
+
+---
+
+### 7.2 Steering Saturation
+- Straight segments: **±0.13 rad**  
+- Curved segments: **±0.35 rad**  
+→ prevents over-aggressive steering and ensures actuator stability.
+
+<img src="../../../images/control17.png" alt="Steering Saturation Settings" width="800"/>
+
+---
+
+### 7.3 Results
+After implementing these improvements,  
+the system exhibited reduced output spikes and maintained smooth motion.
+
+<img src="../../../images/control18.gif" alt="Improved Tracking Results" width="800"/>
+
+<img src="../../../images/control19.gif" alt="Final Simulation Results" width="800"/>
+
+Both **simulation and real-world experiments** confirmed that Pure Pursuit achieved stable performance across low- and high-speed, curved, and straight sections.  
+Adaptive look-ahead tuning and saturation settings significantly reduced steering jitter and improved driving stability.
+
+---
+
+## 8. Conclusion
+
+This study compared and implemented **PID**, **Stanley**, and **Pure Pursuit** controllers.  
+While PID was sufficient for basic low-speed tasks,  
+Stanley and Pure Pursuit provided superior performance in **high-speed** and **tight-curve** scenarios.  
+
+Stanley’s geometric correction and Stateflow-based event logic offered strong path adherence,  
+whereas Pure Pursuit achieved smooth, continuous steering with lower computational cost.  
+
+Ultimately, due to hardware constraints in QLabs, **Pure Pursuit** was selected for final deployment,  
+demonstrating stable performance and precise tracking in both simulation and real driving tests.
+
+Future work will involve reintegrating **SCNN+Depth-based** lane input,  
+and exploring **MPC** for adaptive, constraint-aware trajectory control once full sensor synchronization is available.
