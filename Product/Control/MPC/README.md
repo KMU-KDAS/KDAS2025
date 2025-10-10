@@ -2,7 +2,7 @@
 
 ---
 
-## 📘 1. Paper Review and Conceptual Foundation
+## 1. Paper Review and Conceptual Foundation
 
 The motivation for exploring and applying **Model Predictive Control (MPC)** in this project can be outlined as follows:
 
@@ -24,7 +24,7 @@ Unlike most reference studies limited to simulation, this project extended the *
 
 ---
 
-## ⚙️ 2. System Implementation
+## 2. System Implementation
 
 ### **Sensor Fusion and State Estimation**
 
@@ -67,9 +67,9 @@ This is addressed as a key point for **future improvement** (see Section 4).
 
 ---
 
-## 🧮 3. Cost Function and Weight Matrices (Q, R)
+## 3. Cost Function and Weight Matrices (Q, R)
 
-🖼️ **Insert Image Placeholder:** `MPC_Cost_Function.png`  
+ **Insert Image Placeholder:** `MPC_Cost_Function.png`  
 *(Insert your attached figure showing the cost function and Q/R matrix explanation.)*
 
 The MPC objective function is defined as:
@@ -95,7 +95,7 @@ Determines how much to penalize **control effort** (steering, throttle).
 
 ---
 
-## 📊 4. Results and Analysis
+## 4. Results and Analysis
 
 
 The experimental track was narrow and contained several high-curvature segments.  
