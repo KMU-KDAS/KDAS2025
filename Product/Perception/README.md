@@ -8,7 +8,7 @@
 
 - Local/global mapping & localization, robust near/mid-range geometry via 360° 2D scan, simple USB/UART (5 V) integration
 
-<img src="../../../images/sensor1.png" alt="RPLIDAR A2M12" width="700"/>
+<img src="../../images/sensor1.png" alt="RPLIDAR A2M12" width="400"/>
 
 **Key Specs**
 
@@ -31,7 +31,7 @@
 
 - YOLOv8s for real-time object/traffic-light/sign detection; SCNN for robust lane estimation → lane keeping / lane-change support
 
-<img src="../../../images/sensor2.png" alt="RealSense D435i" width="700"/>
+<img src="../../images/sensor2.png" alt="RealSense D435i" width="400"/>
 
 **Key Specs**
 
@@ -53,7 +53,7 @@
 
 - FOC / closed-loop speed feedback (electrical angle, speed, position); wheel odometry & safety (overspeed/slip) inputs
 
-<img src="../../../images/sensor3.png" alt="Encoder & Tachometer" width="700"/>
+<img src="../../images/sensor3.png" alt="Encoder & Tachometer" width="400"/>
 
 **Constants**
 
