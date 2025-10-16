@@ -12,7 +12,7 @@ Additionally, ROS2’s **QoS (Quality of Service)** profiles allow fine-grained 
 
 Among available distributions, we selected **ROS2 Humble Hawksbill** instead of the newer **Jazzy Jalisco**. Although Jazzy introduced new features, it was still in an early release phase with compatibility limitations, whereas Humble provided extensive documentation, community support, and a stable toolchain. This decision enabled a **robust, stable integrated network** across all modules.
 
-<img src="../../images/Ros1.gif" alt="ROS2 Network Overview" width="800"/>
+<img src="../../images/ROS1.gif" alt="ROS2 Network Overview" width="800"/>
 
 ---
 
@@ -31,7 +31,7 @@ This achieved **low-latency pose feedback** and **loss-free path delivery** simu
 
 ## 3. Simulink Integration and Helper Node
 
-<img src="../../images/Ros2.png" alt="Simulink and Helper Node Integration" width="800"/>
+<img src="../../images/Ros2.gif" alt="Simulink and Helper Node Integration" width="800"/>
 
 To simplify the ROS2–Simulink interface (and avoid custom msg overhead), we used **`geometry_msgs/Point`** to transmit commands as:
 
