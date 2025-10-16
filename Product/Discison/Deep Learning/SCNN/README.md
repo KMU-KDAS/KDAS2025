@@ -139,7 +139,7 @@ Note: The algorithm was implemented and validated conceptually; however, QLabsâ€
 - Robust detection on tight curves; centerline remains continuous after post-processing.  
 - On real and simulated tracks, **centerline-based steering** achieved **no lane departures**.
 
-<img src="../../../../images/SCNN10.gif" alt="Quantitative and Qualitative Results" width="800"/>
+<img src="../../../../images/SCNN1.gif" alt="Quantitative and Qualitative Results" width="800"/>
 
 **Controller Integration**
 - The SCNN centerline was fed to a PID/geometry-based controller (see **XYTRON PID** section) and yielded smooth lane-center driving.
