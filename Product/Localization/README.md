@@ -64,7 +64,7 @@ This prevented the control layer (MPC, Pure Pursuit) from overreacting to small 
 
 <p align="center">
   <img src="../../images/local3.png" alt="Filtered localization signals" width="750"/><br/>
-  <i>Example: x-coordinate vibration reduction while stationary</i>
+  <i>Example: Oscillation of x-coordinate while being stationery</i>
 </p>
 
 ---
