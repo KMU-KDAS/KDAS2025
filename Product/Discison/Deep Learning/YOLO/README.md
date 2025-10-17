@@ -1,4 +1,4 @@
-# YOLOv8 for Traffic Signals & Road Signs (Autonomous RC / QCar & QLabs)
+# YOLOv8 for Traffic Signals & Road Signs 
 
 > Real-time object detection for **traffic lights (Red/Yellow/Green), STOP signs, roundabouts**, etc.  
 > Chosen model: **YOLOv8-s** (speed–accuracy balance for embedded/real-time).
