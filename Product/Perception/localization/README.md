@@ -1,4 +1,4 @@
-# Localization (Cartographer SLAM Integration)
+# Localization (Cartographer SLAM)
 
 > Accurate **self-localization** is the foundation of all vehicle control systems.  
 > This section describes the transition from conventional GPS and AMCL to a **LiDAR-based Cartographer SLAM** approach optimized for small-scale RC environments.
@@ -29,7 +29,7 @@ AMCL also lacks **loop closure**, causing cumulative drift, and assumes a **stat
 Therefore, AMCL was not suitable for the RC-car setup, where odometry uncertainty is high.
 
 <p align="center">
-  <img src="../../../images/local2.png" alt="AMCL limitations vs Cartographer performance" width="750"/>
+  <img src="../../../images/local2.jpg" alt="AMCL limitations vs Cartographer performance" width="750"/>
 </p>
 
 In contrast, **Google Cartographer** performs **direct scan matching**, reducing odometry dependence and achieving high mapping accuracy on small-scale tracks.  
