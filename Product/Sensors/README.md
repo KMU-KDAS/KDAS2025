@@ -1,4 +1,4 @@
-# **Sensor Suite & Integration (Perception + Localization)**
+# **Sensor Suite & Integration (Perception)**
 
 > An autonomous vehicle requires **complementary multi-sensor fusion** to achieve reliable perception and localization across lighting, occlusion, reflectivity, and speed variations.
 
