@@ -1,4 +1,4 @@
-# Planning and Decision (DQN Path Optimization)
+# Planning and Decision (DQN)
 
 > This repository covers the process of deriving the **optimal route sequence (node visit order)** inside a closed-loop track using a **Deep Q-Network (DQN)** approach.  
 > The algorithm was developed for an autonomous taxi scenario, where the vehicle must sequentially visit predefined **Pickup** and **Drop-off** points.
