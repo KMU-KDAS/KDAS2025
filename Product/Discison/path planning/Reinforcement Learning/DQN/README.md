@@ -128,7 +128,7 @@ The agent selects actions using ε-Greedy policy, updates parameters via backpro
 Start → Pick-up (Node 3) → Drop-off (Node 34) → Return to Hub (Node 59)
 
 <p align="center">
-  <img src="../../../../images/dqn1.png" alt="DQN scenario 1 path" width="750"/>
+  <img src="../../../../../images/dqn1.png" alt="DQN scenario 1 path" width="750"/>
 </p>
 
 **Result:**  
@@ -136,7 +136,7 @@ The DQN accurately visited all assigned nodes sequentially, avoiding reverse dri
 It demonstrated robust route planning within the complex directed graph structure.
 
 <p align="center">
-  <img src="../../../../images/dqn2.png" alt="DQN scenario 1 result" width="750"/>
+  <img src="../../../../../images/dqn2.png" alt="DQN scenario 1 result" width="750"/>
 </p>
 
 ---
@@ -147,7 +147,7 @@ It demonstrated robust route planning within the complex directed graph structur
 Start → 3 → 43 → 49 → 10 → 14 → Return to Start
 
 <p align="center">
-  <img src="../../../../images/dqn3.png" alt="DQN scenario 2 path" width="750"/>
+  <img src="../../../../../images/dqn3.png" alt="DQN scenario 2 path" width="750"/>
 </p>
 
 **Result:**  
@@ -155,7 +155,7 @@ Even with an increased number of waypoints, DQN maintained consistent and stable
 It sequentially achieved all sub-goals, validating scalability for more complex multi-stop taxi missions.
 
 <p align="center">
-  <img src="../../../../images/dqn4.png" alt="DQN scenario 2 result" width="750"/>
+  <img src="../../../../../images/dqn4.png" alt="DQN scenario 2 result" width="750"/>
 </p>
 
 ---
@@ -165,7 +165,7 @@ It sequentially achieved all sub-goals, validating scalability for more complex 
 The generated paths were saved as segmented files (`p1`, `p2`, `p3`, …) and also merged into a total integrated path.
 
 <p align="center">
-  <img src="../../../../images/dqn5.png" alt="JSON structure for DQN path" width="750"/>
+  <img src="../../../../../images/dqn5.png" alt="JSON structure for DQN path" width="400"/>
 </p>
 
 This **segment-based structure** allows independent learning and validation of each route segment while maintaining full-path integration.  
