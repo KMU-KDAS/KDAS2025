@@ -99,7 +99,29 @@ names: ['Red', 'Green', 'Yellow', 'roundabout', 'stop']
 
 ---
 
-### 3.2 Optimizer: AdamW
+### 3.2 Applied Augmentation Selection (Project-Specific)
+
+| Augmentation | Used | Reason |
+|:--------------|:-----:|:-------|
+| **hsv_h** | ❌ | Not needed — simulation lighting and hue remain consistent |
+| **hsv_s** | ❌ | Fixed saturation; applying may cause confusion in color recognition |
+| **hsv_v** | ❌ | Brightness uniform; unnecessary for this setup |
+| **scale** | ✅ | Handles object-size change with distance during driving |
+| **translate** | ✅ | Corrects positional offsets from camera vibration or drift |
+| **flipud** | ❌ | No vertical inversion cases (road or sign are upright only) |
+| **fliplr** | ✅ | Enhances generalization for left/right lane direction changes |
+| **degrees** | ✅ | Compensates for small pitch/yaw rotations from vehicle motion |
+| **shear** | ✅ | Covers mild lens tilt or camera misalignment distortions |
+| **perspective** | ✅ | Adjusts for forward-motion depth and perspective effects |
+| **blur** | ✅ | Simulates motion blur or autofocus deviation during movement |
+| **noise** | ✅ | Emulates RealSense sensor noise or compression artifacts |
+| **cutout** | ❌ | Causes excessive distortion and harms efficiency |
+| **mosaic** | ✅ | Boosts detection of small signs by diversifying scene backgrounds |
+| **mixup** | ❌ | Reduces edge sharpness; harms small object discrimination |
+
+---
+
+### 3.3 Optimizer: AdamW
 
 We used **AdamW** instead of classical SGD for more stable convergence and built-in regularization.  
 AdamW explicitly decouples weight decay from the gradient update:
@@ -117,6 +139,7 @@ where
 This improves both **training stability** and **generalization** by preventing overfitting on specific features (color, shape, location).
 
 ---
+
 
 ## 4. Results
 
