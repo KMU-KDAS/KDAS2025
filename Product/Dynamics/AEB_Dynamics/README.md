@@ -1,222 +1,181 @@
-# QCar Vehicle Dynamics Model (RC Implementation)
+# Gasoline Vehicle Model (AEB Dynamics)
 
-> Motor-driven, **brake-less** 1/10-scale RC vehicle dynamics modeled from first principles to match **QCar** hardware (BLDC + ESC).  
-> All equations are implemented explicitly (no “Vehicle Dynamics Bicycle Model” block) and are compatible with **QLabs** and **ROS2** I/O rates/types.
+> A MATLAB/Simulink **Bicycle Vehicle Model** implementing the **Autonomous Emergency Braking (AEB)** system with physics-based vehicle dynamics, tire modeling, and sensor-fused TTC (Time-To-Collision) estimation.
 
 ---
 
 ## 1. Overview
 
-Unlike a gasoline car, **QCar** uses a BLDC motor and an **ESC** without a hydraulic brake. The model therefore:
-- computes **longitudinal** and **lateral** dynamics directly from torque, slip, and simple tire laws,
-- maps **ESC duty** to motor torque,
-- omits explicit brake torque and uses **reverse/coast torque** from the ESC for deceleration,
-- remains lightweight for **real-time control** (MPC, AEB, path tracking) and simulation parity.
+The **AEB (Autonomous Emergency Braking)** system predicts potential frontal collisions and automatically applies braking without driver input.  
+A key metric is the **Time-To-Collision (TTC)**, which depends directly on accurate vehicle speed estimation.
 
----
+This project models physically consistent vehicle motion and braking behavior using MATLAB’s **3DOF Bicycle Model** block.  
+Sensor-fused TTC combines:
 
-## 2. Architecture Differences (Why a custom model?)
+- **Relative distance ($D_{rel}$)** from LiDAR/Camera  
+- **Relative velocity ($V_{rel}$)** from optical flow + LiDAR depth  
+- **Vehicle speed ($v_x$)** from the dynamics block  
 
-| Item | Gasoline Car | QCar (RC) |
-|---|---|---|
-| Powertrain | Engine → Gearbox → Wheel | ESC → **BLDC Motor** → Wheel |
-| Braking | Hydraulic brake torque | **No physical brake** (ESC reverse/coast) |
-| Control Inputs | Throttle, Brake pressure | **ESC duty** (and decel command `Pmc`) |
-| Key Outputs | Engine RPM, Vehicle speed | **Motor speed**, Vehicle speed |
-| Brake Torque | Explicit term in equations | **Absent** (replaced by friction/ESC decel) |
-
-> We reconstruct a compact **3-DOF** structure (longitudinal + planar lateral/yaw) instead of shrinking a passenger-car bicycle block.
-
----
-
-## 3. Symbols
-
-| Symbol | Name | Unit | Note |
-|---|---:|---:|---|
-| $J_w$ | Wheel equivalent inertia | kg·m² | Wheel + motor reflected inertia |
-| $\omega_w$ | Wheel angular speed | rad/s | From encoder |
-| $\dot{\omega}_w$ | Wheel angular accel. | rad/s² | – |
-| $T_m$ | Motor torque | N·m | From ESC duty via $k_t$ |
-| $T_{reverse}$ | Reverse / Coast torque | N·m | ESC-induced decel when commanded |
-| $F_t$ | Tire tractive force | N | Nonlinear vs slip $s$ |
-| $r_w$ | Wheel radius | m | Measured on RC tire |
-| $v_x$ | Longitudinal vehicle speed | m/s | $v_x = r_w \omega_w (1-s)$ |
-| $s$ | Slip ratio | – | $s = \dfrac{r_w \omega_w - v_x}{\max(v_x,\varepsilon)}$ |
-| $\mu$ | Friction coefficient | – | Slip-dependent |
-| $F_z$ | Normal load | N | From mass distribution |
-
----
-
-## 4. Longitudinal Dynamics
-
-### 4.1 Wheel–Motor Dynamics
-
-$$
-J_w \dot{\omega}_w = T_m - T_{reverse} - F_t r_w
-$$
-
-Slip, tire force, and friction:
-
-$$
-s = \frac{r_w \omega_w - v_x}{\max(v_x,\varepsilon)}, \qquad
-F_t = \mu(s) F_z
-$$
+to compute a corrected TTC for **AEB logic** and **Evasive Maneuver** decision layers.
 
 <p align="center">
-  <img src="../../../images/abdq1.png" alt="Wheel/motor longitudinal block" width="760"/>
+  <img src="../../../images/aebd1.png" alt="AEB model overview" width="700"/>
 </p>
 
 ---
 
-### 4.2 Motor Torque (ESC Duty → Torque)
+## 2. 3DOF Bicycle Model Equations
+
+The **Vehicle Dynamics Block** implements a force-based **3 Degree-of-Freedom (3DOF)** model governed by:
 
 $$
-T_m = k_t I_m = k_t \frac{V_{duty} - k_e \omega_m}{R}
+\begin{cases}
+m(\dot v_x - v_y r) = F_{xf} + F_{xr} - F_{aero} \\
+m(\dot v_y + v_x r) = F_{yf} + F_{yr} \\
+I_z \dot r = l_f F_{yf} - l_r F_{yr}
+\end{cases}
 $$
-
-where $k_t$ is the torque constant, $k_e$ the back-EMF constant, and $R$ the internal resistance.  
-Deceleration is realized by duty reduction or reverse command (no brake torque term).
 
 <p align="center">
-  <img src="../../../images/abdq2.png" alt="ESC duty to motor torque" width="760"/>
+  <img src="../../../images/aebd2.jpg" alt="3DOF vehicle dynamics" width="700"/>
 </p>
 
 ---
 
-## 5. Tire Model (Longitudinal)
-
-We use a low-cost **Pacejka-style** (Magic Formula) curve to connect linear to saturation regions:
+### (1) Longitudinal Motion
 
 $$
-F_t(s) = D \sin \!\Big( C \arctan \!\big( B s - E (B s - \arctan(B s)) \big) \Big)
+m(\dot v_x - v_y r) = F_{xf} + F_{xr} - F_{aero}
 $$
 
-The model reproduces both linear and saturation regions up to peak slip $s \approx 0.15 \sim 0.2$.
+Longitudinal acceleration is computed from front/rear forces and aerodynamic drag.  
+Throttle input is mapped to **engine torque**, contributing to $F_{xr}$.
+
+---
+
+### (2) Lateral Motion
+
+$$
+m(\dot v_y + v_x r) = F_{yf} + F_{yr}
+$$
+
+Steering angle induces tire lateral forces ($F_y$), governing **cornering** and **evasive response**.
+
+---
+
+### (3) Yaw Motion
+
+$$
+I_z \dot r = l_f F_{yf} - l_r F_{yr}
+$$
+
+Yaw rate is determined by the difference in lateral tire forces, including **load transfer** effects during acceleration and braking.
+
+---
+
+## 3. Tire and Slip Modeling
+
+### 3.1 Longitudinal Slip
+
+$$
+s = \frac{r_{wheel} \omega_{wheel} - v_x}{\max(v_x, \varepsilon)}
+$$
+
+**Inputs:** wheel angular speed ($\omega_{wheel}$), vehicle speed ($v_x$), wheel radius ($r_{wheel}$)  
+**Output:** slip ratio ($s$)  
+
+Slip represents tire–road micro-slip; higher $s$ increases friction saturation under braking.
+
+---
+
+### 3.2 Vehicle Speed Estimation
+
+Vehicle speed is obtained by integrating acceleration:
+
+$$
+\dot v_x = \frac{1}{m} (F_{tractive} - F_{roll} - F_{aero}), 
+\quad 
+v_x = \int \dot v_x \, dt
+$$
+
+To improve low-speed stability, wheel-speed-based estimation may be fused:
+
+$$
+v_x^{wheel} = r_{wheel}\, \omega_{wheel}\, (1 - s_{est})
+$$
+
+The final $v_x$ feeds directly into the **TTC calculation** in the AEB logic.
+
+---
+
+### 3.3 Tire Force (Pacejka Magic Formula)
+
+$$
+F_t = D \sin \!\Big( C \arctan \!\big( B s - E (B s - \arctan(B s)) \big) \Big)
+$$
+
+This nonlinear curve captures friction saturation near the slip region $s \approx 0.15 \sim 0.2$, reproducing the tire traction limit during braking.
+
+---
+
+## 4. TTC Calculation and Correction
 
 <p align="center">
-  <img src="../../../images/abdq3.png" alt="Magic Formula block" width="500"/>
+  <img src="../../../images/aebd3.jpg" alt="TTC computation pipeline" width="700"/>
 </p>
 
-> Aerodynamic drag is negligible at RC speeds; a small residual term is retained for MPC stability.
+### (1) Sensor-Driven TTC
+
+During **Avoidance Preprocessing**, the perception pipeline estimates object states:
+
+- **YOLO:** object detection and ID tracking  
+- **LiDAR:** cluster-based distance → $D_{rel}$  
+- **Camera:** ROI motion / optical flow + depth → $V_{rel}$
+
+Then:
+
+$$
+TTC_{sensor} = \frac{D_{rel}}{V_{rel}}
+$$
+
+Used as the **primary early-stage metric** for Forward Collision Warning (FCW) and Avoidance.
 
 ---
 
-## 6. Vehicle Longitudinal Equation
+### (2) Model-Driven TTC
+
+Sensor TTC does not account for **friction ($\mu$)**, **slip ($s$)**, or **load transfer**, which limit braking capability.  
+To compensate, a **model-based TTC** is calculated in parallel:
 
 $$
-m \dot{v}_x = \sum F_t - F_{roll} - F_{aero} - m g \sin\theta
+TTC_{model} = \frac{D_{rel}}{v_x - v_{obj}}
 $$
 
-<p align="center">
-  <img src="../../../images/abdq4.png" alt="Longitudinal sum of forces" width="500"/>
-</p>
+where $v_x$ comes from the Vehicle Dynamics block, and $v_{obj}$ (if available) from sensors or simulation.  
+This ensures physically consistent AEB logic decisions.
 
 ---
 
-## 7. Lateral Dynamics
+## 5. Control Feedback Structure
 
-### 7.1 Inputs / Outputs / States
+When $TTC_{model}$ falls below a threshold, the **AEB controller** automatically increases brake pressure.  
+This input is fed back into the **Vehicle Dynamics block**, closing the loop:
 
-- **Inputs:** steering angle $\delta$, longitudinal speed $v_x$  
-- **States:** $v_y$ (lateral speed), $r$ (yaw rate)  
-- **Kinematics:** global pose $(x, y, \psi)$
+> Perception → Dynamics Correction → Control Decision → Braking Response
 
-> For real-time control, we keep a compact state set $(v_x, v_y, r)$.  
-> A learned **LSTM** side-model provides auxiliary predictions for steering/lateral error.
+A fully closed-loop system ensuring end-to-end physical consistency.
 
 ---
 
-### 7.2 Tire Slip Angles (Front / Rear)
+## 6. Summary and Significance
 
-$$
-\alpha_f = \delta - \frac{v_y + l_f r}{v_x}, \qquad
-\alpha_r = -\frac{v_y - l_r r}{v_x}
-$$
+This gasoline-based AEB simulator:
 
-Corresponding lateral tire forces:
+- Uses **validated 3DOF Bicycle Model equations**
+- Integrates **sensor-fusion TTC correction** and dynamic feedback  
+- Serves as a **reference baseline** for verifying AEB and **Evasive Maneuver** logic  
 
-$$
-F_{yf} = -C_f \tan^{-1}(\alpha_f), \qquad
-F_{yr} = -C_r \tan^{-1}(\alpha_r)
-$$
-
-<p align="center">
-  <img src="../../../images/abdq5.png" alt="Lateral tire forces with arctan saturation" width="500"/>
-</p>
+Its RC counterpart (**QCar model**) extends the same physical framework to real hardware for **Kalman Filter** and **Model Predictive Control (MPC)** studies.
 
 ---
 
-### 7.3 Planar Lateral / Yaw Equations
-
-$$
-m(\dot{v}_y + v_x r) = F_{yf} + F_{yr}, \qquad
-I_z \dot{r} = l_f F_{yf} - l_r F_{yr}
-$$
-
-Integrate to get $v_y(t)$ and $r(t)$, then update the global pose.  
-A 2-track model is unnecessary at QCar speeds but can be added for higher fidelity.
-
-<p align="center">
-  <img src="../../../images/abdq6.png" alt="Planar lateral/yaw dynamics" width="500"/>
-</p>
-
----
-
-## 8. Motor–Wheel–Vehicle Speed Mapping
-
-With no gearbox, motor speed maps almost directly to vehicle speed:
-
-$$
-v_x = r_w \omega_{motor} (1 - s)
-$$
-
-<p align="center">
-  <img src="../../../images/abdq7.png" alt="Motor speed to vehicle speed" width="500"/>
-</p>
-
-This mapping feeds **TTC**, **MPC**, and simulator I/O; on-vehicle we compute $v_x$ from measured $\omega_{motor}$, while in simulation $\omega_{motor}$ can be commanded and mirrored.
-
----
-
-## 9. TTC-Based Deceleration Logic (AEB / Avoidance)
-
-Relative-distance / velocity TTC:
-
-$$
-\text{TTC} = \frac{D_{rel}}{v_x - v_{obj}}
-$$
-
-If the TTC-based **Avoidance cost** falls below a threshold, a deceleration command $Pmc$ is issued and the ESC applies reverse/coast torque.  
-This reproduces **AEB** behavior without a physical brake system.
-
----
-
-## 10. Vision-Triggered Stop Logic (Parallel to TTC)
-
-In parallel with TTC, **YOLO** detections (traffic light, stop sign, crosswalk) are fed to **Stateflow**:
-- Stateflow combines **State** (current mode) and **Event** (vision) → issues a **stop** command ($v_{motor}=0$).  
-- Operates **in parallel** with AEB; either mechanism can trigger stop control.
-
----
-
-## 11. Validation & Conclusion
-
-Track tests confirmed that the simulated responses closely matched measured QCar behavior in both longitudinal and lateral axes.  
-The model runs stably with **MPC / AEB / path-tracking** modules.
-
-<table>
-  <tr>
-    <td align="center" valign="top">
-      <img src="../../../images/control18.gif" alt="Improved Tracking Results" width="400"/><br/>
-      <b>Improved Tracking Results</b>
-    </td>
-    <td align="center" valign="top">
-      <img src="../../../images/control19.gif" alt="Final Simulation Results" width="400"/><br/>
-      <b>Final Simulation Results</b>
-    </td>
-  </tr>
-</table>
-
-*(Optional) Xytron avoidance photos can be inserted here.*
-
----
