@@ -37,7 +37,7 @@ I_z \dot r = l_f F_{yf} - l_r F_{yr}
 $$
 
 <p align="center">
-  <img src="../../../images/aebd2.jpg" alt="3DOF vehicle dynamics" width="700"/>
+  <img src="../../../images/aebd2.jpeg" alt="3DOF vehicle dynamics" width="700"/>
 </p>
 
 ---
@@ -121,7 +121,7 @@ This nonlinear curve captures friction saturation near the slip region $s \appro
 ## 4. TTC Calculation and Correction
 
 <p align="center">
-  <img src="../../../images/aebd3.jpg" alt="TTC computation pipeline" width="700"/>
+  <img src="../../../images/aebd3.jpeg" alt="TTC computation pipeline" width="700"/>
 </p>
 
 ### (1) Sensor-Driven TTC
