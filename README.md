@@ -17,61 +17,61 @@ Click each caption to jump to the corresponding module folder under `Product/`.
 <table>
   <tr>
     <td align="center">
-      <img src="SCNN1.gif" width="300"><br>
+      <img src="images/SCNN1.gif" width="300"><br>
       <b><a href="Product/Decision/SCNN/">SCNN – Lane</a></b>
     </td>
     <td align="center">
-      <img src="SCNN11.gif" width="300"><br>
+      <img src="images/SCNN11.gif" width="300"><br>
       <b><a href="Product/Decision/SCNN/">SCNN – Lane (Alt)</a></b>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="yolo9.gif" width="300"><br>
+      <img src="images/yolo9.gif" width="300"><br>
       <b><a href="Product/Decision/YOLO/">YOLO – Detection #1</a></b>
     </td>
     <td align="center">
-      <img src="yolo10.gif" width="300"><br>
+      <img src="images/yolo10.gif" width="300"><br>
       <b><a href="Product/Decision/YOLO/">YOLO – Detection #2</a></b>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="yolo11.gif" width="300"><br>
+      <img src="images/yolo11.gif" width="300"><br>
       <b><a href="Product/Decision/YOLO/">YOLO – Detection #3</a></b>
     </td>
     <td align="center">
-      <img src="control18.gif" width="300"><br>
+      <img src="images/control18.gif" width="300"><br>
       <b><a href="Product/Control/">Control – Pure Pursuit #1</a></b>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="control19.gif" width="300"><br>
+      <img src="images/control19.gif" width="300"><br>
       <b><a href="Product/Control/">Control – Pure Pursuit #2</a></b>
     </td>
     <td align="center">
-      <img src="abdq8.gif" width="300"><br>
+      <img src="images/abdq8.gif" width="300"><br>
       <b><a href="Product/Decision/path%20planning/">RRT/DQN – Planning #1</a></b>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="abdq9.gif" width="300"><br>
+      <img src="images/abdq9.gif" width="300"><br>
       <b><a href="Product/Decision/path%20planning/">RRT/DQN – Planning #2</a></b>
     </td>
     <td align="center">
-      <img src="ROS1.gif" width="300"><br>
+      <img src="images/ROS1.gif" width="300"><br>
       <b><a href="Product/ROS/">ROS2 – System Integration #1</a></b>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="Ros1.gif" width="300"><br>
+      <img src="images/Ros1.gif" width="300"><br>
       <b><a href="Product/ROS/">ROS2 – System Integration #2</a></b>
     </td>
     <td align="center">
-      <img src="abdq8.gif" width="300" style="visibility:hidden"><br>
+      <img src="images/abdq8.gif" width="300" style="visibility:hidden"><br>
       <b style="visibility:hidden">placeholder</b>
     </td>
   </tr>
