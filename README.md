@@ -2,7 +2,7 @@
 
 # Kookmin Autonomous Driving Project (KMU-KDAS)
 
-<img src="../image/kdasmain.gif" alt="KDAS" width="800"/>
+<img src="images/kdasmain.gif" alt="KDAS" width="800"/>
 
 This repository serves as the central archive of the **Kookmin Autonomous Driving System (KMU-KDAS)**.  
 All modules are stored under `Product/` and correspond to specific functionalities such as perception, localization, planning, control, and ROS2 integration.  
