@@ -4,172 +4,152 @@
 
 <img src="images/kdasmain.gif" alt="KDAS" width="800"/>
 
-This repository serves as the central archive of the **Kookmin Autonomous Driving System (KMU-KDAS)**.  
-All modules are stored under `Product/` and correspond to specific functionalities such as perception, localization, planning, control, and ROS2 integration.  
-Each folder contains detailed implementations, experiment results, and figures.
+The **Kookmin Autonomous Driving System (KMU-KDAS)** is a full-stack autonomous RC-car platform  
+developed for the **Quanser Autonomous Car Competition (ACC)**.  
+This repository documents our journey from basic vehicle dynamics simulation to a fully integrated  
+ROS2-based AI driving system running on the QCar2 hardware.
 
 ---
 
-## Whole Project (GIF Previews)
+## 1. Overall Results (GIF Summary)
 
-Click each caption to jump to the corresponding module folder under `Product/`.
+Below are the final results showing each module operating in real-time.
+Click on each caption to open the corresponding folder in `Product/`.
 
 <table>
   <tr>
     <td align="center">
       <img src="images/SCNN1.gif" width="300"><br>
-      <b><a href="Product/Decision/SCNN/">SCNN – Lane</a></b>
-    </td>
-    <td align="center">
-      <img src="images/SCNN11.gif" width="300"><br>
-      <b><a href="Product/Decision/SCNN/">SCNN – Lane (Alt)</a></b>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="images/yolo9.gif" width="300"><br>
-      <b><a href="Product/Decision/YOLO/">YOLO – Detection #1</a></b>
+      <b><a href="Product/Decision/SCNN/">Lane Detection (SCNN)</a></b>
     </td>
     <td align="center">
       <img src="images/yolo10.gif" width="300"><br>
-      <b><a href="Product/Decision/YOLO/">YOLO – Detection #2</a></b>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="images/yolo11.gif" width="300"><br>
-      <b><a href="Product/Decision/YOLO/">YOLO – Detection #3</a></b>
-    </td>
-    <td align="center">
-      <img src="images/control18.gif" width="300"><br>
-      <b><a href="Product/Control/">Control – Pure Pursuit #1</a></b>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="images/control19.gif" width="300"><br>
-      <b><a href="Product/Control/">Control – Pure Pursuit #2</a></b>
-    </td>
-    <td align="center">
-      <img src="images/abdq8.gif" width="300"><br>
-      <b><a href="Product/Decision/path%20planning/">RRT/DQN – Planning #1</a></b>
+      <b><a href="Product/Decision/YOLO/">Object Detection (YOLO)</a></b>
     </td>
   </tr>
   <tr>
     <td align="center">
       <img src="images/abdq9.gif" width="300"><br>
-      <b><a href="Product/Decision/path%20planning/">RRT/DQN – Planning #2</a></b>
+      <b><a href="Product/Decision/path%20planning/">Path Planning (RRT + DQN)</a></b>
     </td>
     <td align="center">
-      <img src="images/ROS1.gif" width="300"><br>
-      <b><a href="Product/ROS/">ROS2 – System Integration #1</a></b>
+      <img src="images/control19.gif" width="300"><br>
+      <b><a href="Product/Control/">Control (Pure Pursuit)</a></b>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="images/Ros1.gif" width="300"><br>
-      <b><a href="Product/ROS/">ROS2 – System Integration #2</a></b>
+      <img src="images/ROS1.gif" width="300"><br>
+      <b><a href="Product/ROS/">ROS2 System Integration</a></b>
     </td>
     <td align="center">
-      <img src="images/abdq8.gif" width="300" style="visibility:hidden"><br>
-      <b style="visibility:hidden">placeholder</b>
+      <img src="images/SCNN11.gif" width="300"><br>
+      <b><a href="Product/Decision/SCNN/">Lane Tracking Visualization</a></b>
     </td>
   </tr>
 </table>
 
 ---
 
-## Project Modules Overview
+## 2. Development Story
 
-All modules are located inside `Product/`.  
-Each component below includes a short explanation and direct link to its folder.
+### **Step 1. Modeling and Simulation**
+Our work began by modeling vehicle dynamics in MATLAB/Simulink.  
+Using [AEB Dynamics](Product/Dynamics/AEB_Dynamics/) and [QCar Dynamics](Product/Dynamics/QCAR_Dynamics/),  
+we replicated longitudinal and lateral motion to design braking and steering control strategies.  
 
----
+Manual PID tuning proved unstable under varying loads, leading to the development of  
+an automatic tuning pipeline and an [MPC controller](Product/Control/MPC/) for time-to-collision (TTC)-based braking.
 
-### **Perception (Sensor Suite)**
-- **LiDAR (RPLIDAR A2M12)** — Provides 360° 2D scan data for geometry-based mapping and near-field obstacle detection.  
-  [→ Product/Sensors/](Product/Sensors/)
-- **RGB-D (Intel RealSense D435i)** — Captures RGB and depth images for lane estimation and YOLO-based object detection.  
-  [→ Product/Sensors/](Product/Sensors/)
-- **Encoder & Tachometer** — Supplies precise wheel odometry and feedback for speed/position estimation.  
-  [→ Product/Sensors/](Product/Sensors/)
-- **Fusion Rationale** — Explains sensor fusion logic and ROS2 topic QoS configuration.  
-  [→ Product/Sensors/](Product/Sensors/)
+> **Result:** Stable braking under dynamic conditions using MPC.
 
 ---
 
-### **Localization**
-- **Cartographer SLAM** — Performs scan matching–based SLAM for drift-free, high-accuracy localization on small tracks.  
-  [→ Product/Localization/](Product/Localization/)
-- **AMCL Comparison** — Describes AMCL limitations (no loop closure, odometry drift) and rationale for selecting Cartographer.  
-  [→ Product/Localization/](Product/Localization/)
+### **Step 2. Real-Vehicle Implementation**
+We transitioned from simulation to hardware control.  
+Using STM32 and VESC, the [Pure Pursuit controller](Product/Control/Steering%20Control%20&%20Breaking/)  
+was validated as the final steering algorithm due to its robust performance at low speeds.
+
+<img src="images/control18.gif" width="400"/>
+
+Early tests with Stanley control led to oscillations and understeer;  
+Pure Pursuit resolved this by aligning steering with dynamic lookahead geometry.
+
+> **Result:** Smooth and stable real-vehicle steering control.
 
 ---
 
-### **Planning & Decision**
-- **SCNN (Lane Detection)** — Extracts lane boundaries and centerlines using a Spatial CNN model optimized for 640×480 RGB inputs.  
-  [→ Product/Decision/SCNN/](Product/Decision/SCNN/)
-- **YOLO (Object Detection)** — Detects traffic lights, pedestrians, and signs in real time using YOLOv8s on Jetson Orin.  
-  [→ Product/Decision/YOLO/](Product/Decision/YOLO/)
-- **LSTM (Prediction)** — Predicts 2-second future lateral deviation, curvature, and acceleration from CAN data sequences.  
-  [→ Product/Decision/Deep%20Learning/CAN_DATA(LSTM)/](Product/Decision/Deep%20Learning/CAN_DATA(LSTM)/)
-- **RRT (Path Generation)** — Generates free-space paths and connects predefined waypoints within the static mapped track.  
-  [→ Product/Decision/path%20planning/RRT/](Product/Decision/path%20planning/RRT/)
-- **DQN (Waypoint Ordering)** — Determines optimal waypoint traversal order for multi-target navigation tasks.  
-  [→ Product/Decision/Reinforcement%20Learning/DQN/](Product/Decision/Reinforcement%20Learning/DQN/)
-- **PH Curve / TG (Avoidance Trajectory)** — Smooths obstacle-avoidance paths using Tangent Guidance + PH curve blending.  
-  [→ Product/Decision/path%20planning/](Product/Decision/path%20planning/)
+### **Step 3. Perception (Sensor Integration)**
+To perceive the environment, we integrated:
+- LiDAR (RPLIDAR A2M12) for 360° mapping,
+- RGB-D (RealSense D435i) for semantic perception, and
+- Encoders for precise odometry.
+
+[Sensor setup details](Product/Sensors/) explain the ROS2 topic design and fusion rationale.
+
+> **Problem:** Single-sensor reliability was limited under reflections and shadows.  
+> **Solution:** Multi-sensor fusion ensured consistent performance under varying conditions.
 
 ---
 
-### **Control (Independent of ROS2)**
-- **Pure Pursuit Controller** — Implements the final steering control law for lane-following and waypoint tracking.  
-  [→ Product/Control/Steering%20Control%20&%20Breaking/](Product/Control/Steering%20Control%20&%20Breaking/)
-- **MPC** — Uses model-predictive control for speed regulation and dynamic obstacle handling in simulation.  
-  [→ Product/Control/MPC/](Product/Control/MPC/)
-- **Kalman Filter** — Applies EKF for state estimation, combining IMU, encoder, and visual cues.  
-  [→ Product/Control/Kalman_Filter/](Product/Control/Kalman_Filter/)
-- **Avoidance Control** — Implements time-to-collision-based AEB and lateral avoidance strategies.  
-  [→ Product/Control/Avoidance%20Control/](Product/Control/Avoidance%20Control/)
-- **Motor/ESC Control** — Provides PWM-based actuation and VESC speed feedback handling.  
-  [→ Product/Control/Motor%20Control/](Product/Control/Motor%20Control/)
+### **Step 4. Localization**
+Accurate localization was vital for stable planning.  
+We evaluated **AMCL** and **Cartographer** in [Product/Localization/](Product/Localization/).
+
+AMCL showed drift and inconsistency, while Cartographer provided  
+real-time loop closure and map correction using direct LiDAR scan matching.
+
+<img src="images/local3.png" width="400"/>
+
+> **Result:** Cartographer adopted as the default SLAM engine with ±2 cm average pose error.
 
 ---
 
-### **Dynamics**
-- **AEB Dynamics** — MATLAB/Simulink models for longitudinal braking dynamics under TTC and MPC control.  
-  [→ Product/Dynamics/AEB_Dynamics/](Product/Dynamics/AEB_Dynamics/)
-- **QCar Dynamics** — Simscape-based full vehicle model used for Pure Pursuit simulation validation.  
-  [→ Product/Dynamics/QCAR_Dynamics/](Product/Dynamics/QCAR_Dynamics/)
-- **Documentation** — Supplemental modeling references for both AEB and QCar setups.  
-  [AEB doc](Product/Dynamics/github_AEBdynamics.docx) / [QCar doc](Product/Dynamics/github_QCarDynamics.docx)
+### **Step 5. Deep-Learning-Based Perception**
+To extract semantics from images, three deep models were integrated:
+
+- **[SCNN](Product/Decision/SCNN/)** — Lane detection and centerline generation for tracking control.  
+  <img src="images/SCNN1.gif" width="400"/>
+
+- **[YOLOv8s](Product/Decision/YOLO/)** — Real-time detection of traffic lights, signs, and obstacles.  
+  <img src="images/yolo11.gif" width="400"/>
+
+- **[LSTM](Product/Decision/Deep%20Learning/CAN_DATA(LSTM)/)** — Future-state prediction for lateral deviation and curvature.
+
+> **Outcome:** Integrated perception pipeline achieved 45 FPS and enabled proactive control decisions.
 
 ---
 
-### **ROS2 (System Integration)**
-- **Launch Files & Nodes** — Integrates all modules (SLAM, SCNN, YOLO, Control) into a unified runtime pipeline.  
-  [→ Product/ROS/](Product/ROS/)
-- **Topic Graph & Synchronization** — Describes node connections, TF tree, and data-flow latency calibration.  
-  [→ Product/ROS/](Product/ROS/)
+### **Step 6. Path Planning and Decision Making**
+Our decision layer combined classical and reinforcement learning planners.
+
+- **[RRT](Product/Decision/path%20planning/RRT/)** — Generates safe corridors between predefined waypoints.  
+- **[DQN](Product/Decision/Reinforcement%20Learning/DQN/)** — Learns waypoint order to minimize travel distance and time.  
+- **[PH Curve / TG](Product/Decision/path%20planning/)** — Smooths the jagged RRT paths into continuous, drivable curves.
+
+<img src="images/abdq8.gif" width="400"/>
+
+> **Result:** PH-based smoothing reduced lateral jerk and produced collision-free avoidance paths.
 
 ---
 
-### **Product (Hardware & Circuits)**
-- **Circuit / DC-DC** — Contains schematics, wiring diagrams, and power regulation circuits for QCar.  
-  [→ Product/Circuit/](Product/Circuit/)
-- **VESC / ESC Integration** — Configuration and test logs for BLDC motor control and telemetry feedback.  
-  [→ Product/VESC/](Product/VESC/)
-- **Complete Deliverables** — Aggregates all above components under one physical RC-car system.  
-  [→ Product/](Product/)
+### **Step 7. ROS2 Integration**
+All components—SLAM, perception, planning, and control—were unified through ROS2.  
+Each node communicates through a structured topic tree with real-time QoS settings.  
+The launch configuration in [Product/ROS/](Product/ROS/) coordinates all systems.
+
+<img src="images/ROS1.gif" width="400"/>
+
+> **Outcome:** End-to-end autonomous driving achieved in real time on QCar2.
 
 ---
 
-## Notes
+## 3. Summary
 
-- There is **no unified `Simulation` folder**; simulation files are embedded in each relevant module.  
-- **Control** and **ROS2** remain **independent**, ensuring modular testing and flexible deployment.
+The KDAS2025 project evolved from simulation-based control experiments  
+into a fully integrated AI-driven autonomous vehicle system.  
+Each step built upon the last—solving control instability, improving localization,  
+enhancing perception through deep learning, and refining planning through DQN and PH-curve smoothing—  
+culminating in robust, real-time autonomous driving under ROS2.
 
----
-
-## Directory Glimpse
-
+All code, data, and detailed documentation are contained under the respective folders in `Product/`.
