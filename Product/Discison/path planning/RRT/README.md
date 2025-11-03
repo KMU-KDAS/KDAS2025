@@ -1,5 +1,4 @@
 # RRT-Based Global Path Generation  
-*(Rapidly-exploring Random Tree for Global Path Generation)*
 
 ---
 
