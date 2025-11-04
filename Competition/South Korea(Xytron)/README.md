@@ -4,7 +4,7 @@
 
 ## 1. Purpose & Significance
 
-<img src="../../../images/xyt1.png" width="620" alt="Competition Overview"/>
+<img src="../../images/xyt1.png" width="620" alt="Competition Overview"/>
 
 The competition, organized by **Xytron Co., Ltd.**, aimed to promote the educational dissemination and industrial application of autonomous driving technology.  
 It was held at **Kookmin University’s Autonomous Driving Studio**, where participants were evaluated using both **the Xytron Simulator** and **a real 1/10-scale autonomous vehicle**.  
@@ -35,20 +35,20 @@ Teams were required to complete a full lap on the virtual track within the Xytro
 
 <br/>
 
-<img src="../../../images/xyt2.png" width="700" alt="Traffic Light and Lane Detection"/>
+<img src="../../images/xyt2.jpeg" width="700" alt="Traffic Light and Lane Detection"/>
 
 - **Traffic light recognition**  
 - **Stable lane-keeping based on lane detection**
 
 <br/>
 
-<img src="../../../images/xyt3.png" width="700" alt="S-Cone Navigation"/>
+<img src="../../images/xyt3.png" width="700" alt="S-Cone Navigation"/>
 
 - **Collision-free navigation through an S-shaped cone section**
 
 <br/>
 
-<img src="../../../images/xyt4.png" width="700" alt="Vehicle Overtaking"/>
+<img src="../../images/xyt4.png" width="700" alt="Vehicle Overtaking"/>
 
 - **Safe overtaking of two slower vehicles on a straight road**
 
@@ -56,7 +56,7 @@ Teams were required to complete a full lap on the virtual track within the Xytro
 
 <br/>
 
-<img src="../../../images/xyt5.png" width="720" alt="Physical Stage Track Layout"/>
+<img src="../../images/xyt5.png" width="720" alt="Physical Stage Track Layout"/>
 
 Teams drove a **1/10-scale vehicle** for **three laps** on the real test track.  
 Performance was evaluated on **lane detection accuracy**, **cone collision avoidance**, and **vehicle overtaking capability**.
@@ -67,21 +67,21 @@ Performance was evaluated on **lane detection accuracy**, **cone collision avoid
 
 <br/>
 
-<img src="../../../images/xyt6.png" width="740" alt="Simulation System Diagram"/>
+<img src="../../images/xyt6.png" width="740" alt="Simulation System Diagram"/>
 
 - The Xytron simulator provided only a **front-facing 180° LiDAR** and **RGB camera**, disallowing the use of **SLAM** or **Waypoint-based planning**.  
 - We implemented a **lightweight driving algorithm** combining **SCNN-based lane detection** with a **PID controller**.
 
 <br/>
 
-<img src="../../../images/xyt7.gif" width="740" alt="Traffic Cone Avoidance Simulation"/>
+<img src="../../images/xyt7.gif" width="740" alt="Traffic Cone Avoidance Simulation"/>
 
 **Traffic Cone Avoidance:**  
 Using LiDAR-based distance estimation, the vehicle calculated the midpoint between cones and adjusted its steering via PID control to pass safely without collision.
 
 <br/>
 
-<img src="../../../images/xyt8.gif" width="740" alt="Vehicle Avoidance Simulation"/>
+<img src="../../images/xyt8.gif" width="740" alt="Vehicle Avoidance Simulation"/>
 
 **Vehicle Avoidance:**  
 YOLO-based object detection identified slower vehicles ahead.  
@@ -101,7 +101,7 @@ Detailed technical implementation and simulation results are documented under
 
 <br/>
 
-<img src="../../../images/xyt9.gif" width="760" alt="Simulation Result Demo"/>
+<img src="../../images/xyt9.png" width="760" alt="Simulation Result Demo"/>
 
 **Content:** SCNN-based lane detection and PID-controlled driving demonstration  
 **🔗 YouTube:** [https://youtu.be/zG0h3WG9YYc](https://youtu.be/zG0h3WG9YYc)
@@ -126,8 +126,8 @@ Detailed technical implementation and simulation results are documented under
 
 <br/>
 
-<img src="../../../images/xyt10.png" width="360" alt="Traxxas 4TEC 2.0"/>
-<img src="../../../images/xyt11.png" width="360" alt="Traxxas Slash 4X4 VXL"/>
+<img src="../../images/xyt10.jpeg" width="360" alt="Traxxas 4TEC 2.0"/>
+<img src="../../images/xyt11.jpeg" width="360" alt="Traxxas Slash 4X4 VXL"/>
 
 *(Left: Traxxas 4TEC 2.0 / Right: Traxxas Slash 4X4 VXL)*  
 
