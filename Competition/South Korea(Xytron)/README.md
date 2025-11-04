@@ -1,4 +1,4 @@
-# Domestic Competition  (Hosted by Xytron)
+# Domestic Competition 
 
 ---
 
