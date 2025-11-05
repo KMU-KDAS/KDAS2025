@@ -502,15 +502,28 @@ $$
 
 Using the TDM–TG structure in various two-lane scenarios with different gap sizes and obstacle configurations, we test whether TDM decides lane changes and whether TG generates **smoothly connected waypoints** using PH curves. The following figures show trajectory visualizations for representative cases.
 
-<br/>
-
-<img src="../../../images/avo6.gif" width="410" alt="Case set A gif 1"/>
-<img src="../../../images/avo7.gif" width="410" alt="Case set A gif 2"/>
-
-<br/>
-
-<img src="../../../images/avo8.gif" width="410" alt="Case set B gif 1"/>
-<img src="../../../images/avo9.gif" width="410" alt="Case set B gif 2"/>
+<table>
+  <tr>
+    <td align="center">
+      <img src="../../../images/avo6.gif" width="460" alt="Case A-1"><br/>
+      <sub>Case A-1</sub>
+    </td>
+    <td align="center">
+      <img src="../../../images/avo7.gif" width="460" alt="Case A-2"><br/>
+      <sub>Case A-2</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="../../../images/avo8.gif" width="460" alt="Case B-1"><br/>
+      <sub>Case B-1</sub>
+    </td>
+    <td align="center">
+      <img src="../../../images/avo9.gif" width="460" alt="Case B-2"><br/>
+      <sub>Case B-2</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
