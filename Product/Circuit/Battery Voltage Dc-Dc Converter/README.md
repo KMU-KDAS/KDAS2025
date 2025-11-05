@@ -96,78 +96,99 @@ We must also select a **control method**. Two typical strategies are **Voltage M
 
 ## 3. Specifications and Component Parameter Calculations
 
-Where figures/tables are snapshots in the original document, we embed them as images.
+## Boost Converter Design Tool
 
-<br/>
-<img src="../../../images/con-spec-table-1.png" width="780" alt="Converter summary table (topology, Vin, Vout/Iout, fs, etc.)"/>
-<img src="../../../images/con-spec-table-2.png" width="780" alt="Boost Converter Design Tool - input/output data table"/>
+| **Category** | **Item** | **Value** | **Unit** | **Remark** |
+|--------------|-----------|-----------|-----------|-------------|
+| **Input Data** | $V_{\text{in}}$ | 7.4 | V |  |
+|  | $V_o$ | 19 | V |  |
+|  | $V_{o,\text{ripple ratio}}$ | 1 | % of $V_o$ |  |
+|  | $I_{o,\max}$ | 5 | A |  |
+|  | Inductor current ripple ratio | 5 | % of $I_o$ |  |
+|  | $f_{\text{sw}}$ | 300 | kHz |  |
+| **Output Data** | $D_{\max}$ | 0.611 | – |  |
+|  | $I_{L,\text{ripple}}$ | 0.642 | A |  |
+|  | $V_{o,\text{ripple}}$ | 0.190 | V |  |
+|  | $L_o$ | 23.461 | µH |  |
+|  | $C_o$ | 53.555 | µF |  |
+|  | $T_s$ | 3.333 | µs |  |
+|  | Switch voltage stress | 19.000 | V |  |
+|  | Switch current stress | 5.321 | A |  |
+|  | Diode voltage stress | 19.000 | V |  |
+|  | Diode current stress | 5.321 | A |  |
+| **Minimum Rated Values** | Switch: rated voltage | 33.250 | V | 175% margin |
+|  | Switch: rated current | 10.642 | A | 200% margin |
+|  | Diode: rated voltage | 33.250 | V | 175% margin |
+|  | Diode: rated current | 10.642 | A | 200% margin |
 
 > If your repository uses different filenames, keep the relative paths and replace the `src` with your actual image paths.
 
-Key definitions and sizing equations:
+## Converter Summary (Design Targets)
+
+| Item                     | Value                                     | Unit  | Note |
+|-------------------------|-------------------------------------------|:-----:|------|
+| Topology                | 2-Phase Interleaved Boost, **PCMC**       |  –    | Peak Current Mode + slope comp. |
+| $V_{\text{in}}$         | 7.4–12.6 (worst-case design at 7.4)       |  V    | 2S Li-ion example |
+| $V_o$ / $I_o$           | 19 / 5                                     | V / A | System bus |
+| Switching               | 300 kHz **per phase** (effective ≈ 600 kHz) | kHz | Interleaved |
+| Phases $(N)$            | 2                                          |  –    | 180° phase shift |
+| $C_o$ (total)           | 12 µF × 3 = 36 µF (MLCC, low ESR)         |  µF   | Example from sim/BOM |
+| Ripple targets          | Inductor current 5%, Output voltage 1% (≤ 0.19 Vpp) |  – | Design constraint |
+
+> With a **2-phase interleaved boost**, very stable voltage/current ripple is achieved; $L$ and $C_o$ can be reduced vs. single-phase while keeping ripple within targets.
+
+
+
+## Key Definitions and Sizing Equations
 
 - **ROA (Inductor current ripple ratio)**
 
-  
-  $$
-  \mathrm{ROA} = \frac{\Delta i_L}{I_L}\times 100(\%)
-  $$
-
+$$
+\mathrm{ROA}=\frac{\Delta i_L}{I_L}\times 100\%)
+$$
 
 - **ROV ($V_o$ ripple ratio)**
 
-  
-  $$
-  \mathrm{ROV} = \frac{\Delta V_o}{V_o}\times 100(\%)
-  $$
+$$
+\mathrm{ROV}=\frac{\Delta V_o}{V_o}\times 100\%)
+$$
 
+- **Duty ($D$) for an ideal boost**
 
-- **Duty** ($D$) for ideal boost
-
-  
-  $$
-  \frac{V_o}{V_\text{in}}=\frac{1}{1-D}
-  $$
-
+$$
+\frac{V_o}{V_{\text{in}}}=\frac{1}{1-D}
+$$
 
 - **Inductor average current**
 
-  
-  $$
-  I_L=\frac{I_o}{1-D}
-  $$
-
+$$
+I_L=\frac{I_o}{1-D}
+$$
 
 - **Inductor ripple current**
 
-  
-  $$
-  \Delta i_L=\mathrm{ROA}\cdot I_L
-  $$
-
+$$
+\Delta i_L=\mathrm{ROA}\cdot I_L
+$$
 
 - **Output ripple voltage**
 
-  
-  $$
-  \Delta V_o=\mathrm{ROV}\cdot V_o
-  $$
-
+$$
+\Delta V_o=\mathrm{ROV}\cdot V_o
+$$
 
 - **Inductance**
 
-  
-  $$
-  L=\frac{V_\text{in}}{\Delta i_L}\,D\,T_s
-  $$
-
+$$
+L=\frac{V_{\text{in}}}{\Delta i_L}\,D\,T_s
+$$
 
 - **Output capacitance**
 
-  
-  $$
-  C_o=\frac{I_o}{\Delta V_o}\,D\,T_s
-  $$
+$$
+C_o=\frac{I_o}{\Delta V_o}\,D\,T_s
+$$
+
 
 
 **Note:** With a **2-phase interleaved boost**, we achieved very stable voltage/current ripple and could reduce the inductance and capacitance compared to a single-phase design, providing **cost and size benefits**.
@@ -314,17 +335,17 @@ $$
 - **Switch RMS current**
 
   
-  $$
-  I_{\mathrm{sw,rms}}
-  = I_L\,\sqrt{D}\,\sqrt{1+\frac{1}{12}\left(\frac{\Delta i_L}{I_L}\right)^2}
-  $$
+$$
+\mathrm{ROA} = \frac{\Delta i_L}{I_L} \times 100(\%)
+$$
+
 
 - **Output capacitor RMS current**
 
   
-  $$
-  I_{C,\mathrm{rms}}=(1-D)\,\Delta i_L
-  $$
+$$
+\mathrm{ROV} = \frac{\Delta V_o}{V_o} \times 100(\%)
+$$
 
 
 Using the above:
@@ -406,20 +427,47 @@ Selection criteria:
 <br/>
 <img src="../../../images/con35.png" width="760" alt="Current transformer capture"/>
 
-### 7.8 Error Amplifier / Comparator — **OPA2197IDGKR**
+### 7.8 Error Amplifier / Comparator — OPA2197IDGKR
 
-1) **Crossover frequency**:  
-   With voltage-loop **$f_c\approx 2.396$ kHz**, noise-gain **$\mathrm{NG}\approx 5$**, and margin $k=10\!\sim\!20$, require  
-   $$
-   \mathrm{GBW}_{\min}=k\cdot f_c\cdot \mathrm{NG}=0.24\text{–}0.48\ \mathrm{MHz}
-   $$
-   Choose **MHz-class (≥ 5–10 MHz)** op-amp → **OPAx197** family.
+1. **Crossover Frequency**
 
-2) **−3 dB bandwidth**:  
-   With single-pole approximation $f_{-3\mathrm{dB}}\approx \mathrm{GBW}/\mathrm{NG}$; **OPA2197 (GBW≈10 MHz)** gives about **2 MHz** at NG=5 → ample margin.
+With voltage-loop $f_c \approx 2.396\ \mathrm{kHz}$, noise-gain $\mathrm{NG} \approx 5$, and margin $k = 10 \sim 20$,  
+the required gain-bandwidth product (GBW) is:
 
-3) **Low input bias**:  
-   Divider $R_\text{top}=100\ \text{k}\Omega$, $R_\text{bot}=7.34\ \text{k}\Omega$. Bias-induced output error $\Delta V_\text{out}=I_B\cdot R_\text{top}$. With $I_B=20\ \text{nA}$, $\Delta V_\text{out}\approx 2.0\ \text{mV}$ (≈ 0.0105 %), which satisfies precision needs.
+$$
+\mathrm{GBW}_{\min} = k \cdot f_c \cdot \mathrm{NG} = 0.24 \text{–} 0.48\ \mathrm{MHz}
+$$
+
+Choose **MHz-class (≥ 5–10 MHz)** op-amp → **OPAx197 family**.
+
+
+2. **−3 dB Bandwidth**
+
+With single-pole approximation:
+
+$$
+f_{-3\mathrm{dB}} \approx \frac{\mathrm{GBW}}{\mathrm{NG}}
+$$
+
+For **OPA2197 (GBW ≈ 10 MHz)**, we get about **2 MHz** at $\mathrm{NG}=5$, providing ample margin.
+
+
+3. **Low Input Bias**
+
+Voltage divider: $R_{\text{top}} = 100\ \mathrm{k\Omega}$, $R_{\text{bot}} = 7.34\ \mathrm{k\Omega}$.  
+Bias-induced output error:
+
+$$
+\Delta V_{\text{out}} = I_B \cdot R_{\text{top}}
+$$
+
+With $I_B = 20\ \mathrm{nA}$:
+
+$$
+\Delta V_{\text{out}} \approx 2.0\ \mathrm{mV}\ (\approx 0.0105\%)
+$$
+
+This satisfies the required precision for OPA2197/OPA197.
 
 <br/>
 <img src="../../../images/con36.png" width="760" alt="OPA2197 datasheet capture"/>
