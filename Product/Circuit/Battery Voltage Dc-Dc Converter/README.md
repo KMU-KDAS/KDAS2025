@@ -32,7 +32,7 @@ Simulations confirmed rated-load operation achieving the target output (e.g., **
 - Our requirement is **$V_\text{out} > V_\text{in}$**, so **not suitable**.
 
 <br/>
-<img src="../../../images/con1.png" width="720" alt="Buck converter diagram"/>
+<img src="../../../images/con1.png" width="420" alt="Buck converter diagram"/>
 
 ### 1.2 Buck-Boost Converter
 
@@ -42,7 +42,7 @@ Simulations confirmed rated-load operation achieving the target output (e.g., **
 - Due to polarity and fail-safe concerns, **not suitable**.
 
 <br/>
-<img src="../../../images/con2.png" width="720" alt="Buck-Boost converter diagram"/>
+<img src="../../../images/con2.png" width="420" alt="Buck-Boost converter diagram"/>
 
 ### 1.3 Boost Converter
 
@@ -50,7 +50,7 @@ Simulations confirmed rated-load operation achieving the target output (e.g., **
 - Fits our requirement (**$V_\text{out} > V_\text{in}$**).
 
 <br/>
-<img src="../../../images/con3.png" width="720" alt="Boost converter diagram"/>
+<img src="../../../images/con3.png" width="420" alt="Boost converter diagram"/>
 
 **Decision:** We selected the **Boost** topology.  
 However, a single-phase boost imposes higher stress on the switch and leads to larger inductor current ripple, which increases component stress. To reduce device stress and ripple, we adopt **interleaving**.
@@ -62,7 +62,7 @@ However, a single-phase boost imposes higher stress on the switch and leads to l
 Interleaving drives **$N$ phases** in parallel with a phase shift of **$360^\circ/N$**.
 
 <br/>
-<img src="../../../images/con4.png" width="760" alt="Interleaved phases concept"/>
+<img src="../../../images/con4.png" width="460" alt="Interleaved phases concept"/>
 
 **Effects of interleaving:**
 - Phase ripple currents cancel each other, **greatly reducing output ripple**.  
@@ -74,7 +74,7 @@ We must also select a **control method**. Two typical strategies are **Voltage M
 ### 2.1 Voltage Mode Control (VMC)
 
 <br/>
-<img src="../../../images/con5.png" width="760" alt="Voltage Mode Control block diagram"/>
+<img src="../../../images/con5.png" width="460" alt="Voltage Mode Control block diagram"/>
 
 - Feedback output voltage, compare to reference in an error amplifier, and compare with a ramp to produce PWM duty; stabilizes $V_\text{out}$.  
 - **Issue:** Phase-current balancing is not guaranteed → device mismatch, temperature drift, and wiring imbalance lead to **circulating currents**, **localized heating/saturation**, and loss of interleaving ripple-cancellation benefits.  
@@ -83,7 +83,7 @@ We must also select a **control method**. Two typical strategies are **Voltage M
 ### 2.2 Current Mode Control (CMC)
 
 <br/>
-<img src="../../../images/con6.png" width="760" alt="Current Mode Control block diagram"/>
+<img src="../../../images/con6.png" width="460" alt="Current Mode Control block diagram"/>
 
 - Sense inductor/switch current, compare to a reference, end PWM at the intersection; indirectly regulates $V_\text{out}$.  
 - A **per-phase current loop** directly regulates each phase current, making currents naturally equal despite device/temperature/wiring variations.  
@@ -198,7 +198,7 @@ $$
 ## 4. Open-Loop Test
 
 <br/>
-<img src="../../../images/con7.png" width="760" alt="Open-loop test schematic/plot"/>
+<img src="../../../images/con7.png" width="460" alt="Open-loop test schematic/plot"/>
 
 - Since $D>0.5$, **subharmonic oscillation** can arise; we add **slope compensation** to prevent it.  
 - For control, we must sense current. We emulate the real **current transformer (CT)** used in hardware to ensure simulation behavior closely matches practical operation.
@@ -209,31 +209,31 @@ $$
 
 - **Inductor Current**
 
-  <img src="../../../images/con8.png" width="760" alt="Inductor current (open loop)"/>
+  <img src="../../../images/con8.png" width="460" alt="Inductor current (open loop)"/>
 
 - **Inductor Voltage**
 
-  <img src="../../../images/con9.png" width="760" alt="Inductor voltage (open loop)"/>
+  <img src="../../../images/con9.png" width="460" alt="Inductor voltage (open loop)"/>
 
 ### Switch
 
-<img src="../../../images/con10.png" width="760" alt="Switch waveforms (open loop)"/>
+<img src="../../../images/con10.png" width="460" alt="Switch waveforms (open loop)"/>
 
 ### Diode
 
-<img src="../../../images/con11.png" width="760" alt="Diode waveforms (open loop)"/>
+<img src="../../../images/con11.png" width="460" alt="Diode waveforms (open loop)"/>
 
 ### Output
 
-<img src="../../../images/con12.png" width="760" alt="Output node waveforms (open loop)"/>
+<img src="../../../images/con12.png" width="460" alt="Output node waveforms (open loop)"/>
 
 - **Output Current**
 
-  <img src="../../../images/con13.png" width="760" alt="Output current (open loop)"/>
+  <img src="../../../images/con13.png" width="460" alt="Output current (open loop)"/>
 
 - **Output Voltage**
 
-  <img src="../../../images/con14.png" width="760" alt="Output voltage (open loop)"/>
+  <img src="../../../images/con14.png" width="460" alt="Output voltage (open loop)"/>
 
 **Observations**
 
@@ -249,12 +249,12 @@ $$
 Reference: *Small Signal Modeling and Stability Analysis of N-Phase Interleaved Boost Converter*.
 
 <br/>
-<img src="../../../images/con15.png" width="900" alt="G(s) small-signal model and parameters"/>
+<img src="../../../images/con15.png" width="450" alt="G(s) small-signal model and parameters"/>
 
 ### 5.2 Compensator Transfer Function $H(s)$ — Type-II
 
 <br/>
-<img src="../../../images/con16.png" width="900" alt="Type-II compensator design figure"/>
+<img src="../../../images/con16.png" width="450" alt="Type-II compensator design figure"/>
 
 **Analytic form used in the document:**
 
@@ -264,15 +264,15 @@ $$
 $$
 
 <br/>
-<img src="../../../images/con17.png" width="820" alt="Bode plot of compensator H(s)"/>
-<img src="../../../images/con18.png" width="820" alt="Controller parameter report (zeros/poles, component suggestions)"/>
+<img src="../../../images/con17.png" width="450" alt="Bode plot of compensator H(s)"/>
+<img src="../../../images/con18.png" width="450" alt="Controller parameter report (zeros/poles, component suggestions)"/>
 
 ---
 
 ## 6. Closed-Loop Test
 
 <br/>
-<img src="../../../images/con19.png" width="760" alt="Closed-loop test overview"/>
+<img src="../../../images/con19.png" width="400" alt="Closed-loop test overview"/>
 
 - An inrush current over **14 A** was observed; by adding a resistor and a diode, we reduced the inrush to **≤ 12 A**.
 
@@ -282,44 +282,44 @@ $$
 
 - **Inductor Current**
 
-  <img src="../../../images/con20.png" width="760" alt="Inductor current (closed loop)"/>
+  <img src="../../../images/con20.png" width="460" alt="Inductor current (closed loop)"/>
 
   The inrush is around **11.25 A**. Considering a typical **200% current margin**, we design for **≈ 14 A**, which our sizing satisfies.
 
-  <img src="../../../images/con21.png" width="760" alt="Phase current balance (closed loop)"/>
+  <img src="../../../images/con21.png" width="460" alt="Phase current balance (closed loop)"/>
 
   Phase currents run with a **$180^\circ$** phase shift → interleaving verified.
 
 - **Inductor Voltage**
 
-  <img src="../../../images/con22.png" width="760" alt="Inductor voltage (closed loop)"/>
+  <img src="../../../images/con22.png" width="460" alt="Inductor voltage (closed loop)"/>
 
 ### Switch
 
-<img src="../../../images/con23.png" width="760" alt="Switch waveforms (closed loop)"/>
-<img src="../../../images/con24.png" width="760" alt="Additional switch plots (closed loop)"/>
+<img src="../../../images/con23.png" width="460" alt="Switch waveforms (closed loop)"/>
+<img src="../../../images/con24.png" width="460" alt="Additional switch plots (closed loop)"/>
 
 ### Diode
 
 - **Diode Current**
 
-  <img src="../../../images/con25.png" width="760" alt="Diode current (closed loop)"/>
+  <img src="../../../images/con25.png" width="460" alt="Diode current (closed loop)"/>
 
 - **Diode Voltage**
 
-  <img src="../../../images/con26.png" width="760" alt="Diode voltage (closed loop)"/>
+  <img src="../../../images/con26.png" width="460" alt="Diode voltage (closed loop)"/>
 
 ### Output
 
-<img src="../../../images/con27.png" width="760" alt="Output node waveforms (closed loop)"/>
+<img src="../../../images/con27.png" width="460" alt="Output node waveforms (closed loop)"/>
 
 - **Output Current**
 
-  <img src="../../../images/con28.png" width="760" alt="Output current (closed loop)"/>
+  <img src="../../../images/con28.png" width="460" alt="Output current (closed loop)"/>
 
 - **Output Voltage**
 
-  <img src="../../../images/con29.png" width="760" alt="Output voltage (closed loop)"/>
+  <img src="../../../images/con29.png" width="460" alt="Output voltage (closed loop)"/>
 
 **Observations**
 
@@ -358,7 +358,7 @@ Using the above:
 A 2-phase interleaved PWM controller that guarantees **180° phase shift**, supports **current-mode control**, includes **protection** and **slope compensation** — well-matched to our design.
 
 <br/>
-<img src="../../../images/con30.png" width="760" alt="UCC28220 block/typical application"/>
+<img src="../../../images/con30.png" width="460" alt="UCC28220 block/typical application"/>
 
 ### 7.3 Gate Driver — **UCC27424**
 
@@ -366,7 +366,7 @@ UCC28220’s OUT pins supply ~1 V logic and only tens of mA, insufficient to qui
 Using a dedicated **gate driver** supplies adequate gate voltage/current, reducing rise/fall times, **switching loss**, and **EMI**. UCC27424 is recommended in the UCC28220 datasheet and was selected.
 
 <br/>
-<img src="../../../images/con31.png" width="760" alt="UCC27424 driver figure"/>
+<img src="../../../images/con31.png" width="460" alt="UCC27424 driver figure"/>
 
 ### 7.4 MOSFET — **AG508EGD3HRBTL**
 
@@ -388,7 +388,7 @@ Selection criteria:
    With **$f_s=300$ kHz**, choose **$Q_g \le 30$ nC**.
 
 <br/>
-<img src="../../../images/con32.png" width="760" alt="Selected MOSFET datasheet capture"/>
+<img src="../../../images/con32.png" width="460" alt="Selected MOSFET datasheet capture"/>
 
 ### 7.5 Diode — **SVM1045V2B_R2_00001** (Schottky)
 
@@ -405,7 +405,7 @@ Selection criteria:
    With **$f_s=300$ kHz**, select **$t_{rr}\le 100$ ns**.
 
 <br/>
-<img src="../../../images/con33.png" width="760" alt="Selected diode datasheet capture"/>
+<img src="../../../images/con33.png" width="460" alt="Selected diode datasheet capture"/>
 
 ### 7.6 Output Capacitor — **RKS1V120MCNAFGGS**
 
@@ -417,7 +417,7 @@ Selection criteria:
    ⇒ $I_{\text{ripple,rms}} > 0.26\times 2 = \mathbf{0.52\ A}$
 
 <br/>
-<img src="../../../images/con34.png" width="760" alt="Selected capacitor datasheet capture"/>
+<img src="../../../images/con34.png" width="460" alt="Selected capacitor datasheet capture"/>
 
 ### 7.7 Current Transformer — **CT02-100**
 
@@ -425,7 +425,7 @@ Selection criteria:
 2) **Current rating**: must exceed peak input current (e.g., **> 13 A**).
 
 <br/>
-<img src="../../../images/con35.png" width="760" alt="Current transformer capture"/>
+<img src="../../../images/con35.png" width="460" alt="Current transformer capture"/>
 
 ### 7.8 Error Amplifier / Comparator — OPA2197IDGKR
 
@@ -470,7 +470,7 @@ $$
 This satisfies the required precision for OPA2197/OPA197.
 
 <br/>
-<img src="../../../images/con36.png" width="760" alt="OPA2197 datasheet capture"/>
+<img src="../../../images/con36.png" width="460" alt="OPA2197 datasheet capture"/>
 
 ---
 
@@ -478,11 +478,11 @@ This satisfies the required precision for OPA2197/OPA197.
 
 ### 8.1 Schematic
 
-<img src="../../../images/con37.png" width="900" alt="PCB schematic"/>
+<img src="../../../images/con37.png" width="450" alt="PCB schematic"/>
 
 ### 8.2 Layout
 
-<img src="../../../images/con38.png" width="900" alt="PCB layout"/>
+<img src="../../../images/con38.png" width="450" alt="PCB layout"/>
 
 ---
 
