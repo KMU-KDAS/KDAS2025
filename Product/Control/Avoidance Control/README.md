@@ -435,8 +435,8 @@ The following figures show trajectory visualizations for representative cases.
 
 <br/>
 
-| Case A | Case B |
-|:---:|:---:|
+
+
 | <img src="../../../images/avo6.gif" width="410" alt="Case A PH trajectory"/> | <img src="../../../images/avo7.gif" width="410" alt="Case A second view"/> |
 | <img src="../../../images/avo8.gif" width="410" alt="Case B PH trajectory"/> | <img src="../../../images/avo9.gif" width="410" alt="Case B second view"/> |
 
