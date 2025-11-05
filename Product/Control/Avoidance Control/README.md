@@ -68,7 +68,7 @@ $$
 C_{\mathrm{traffic,1}}^{\,i}=
 \begin{cases}
 0, & n_{\mathrm{car}}=0 \\
--\,w_{\mathrm{car}}\dfrac{\mathrm{Gap}_{\mathrm{car}}}{n_{\mathrm{car}}}, & \text{otherwise}
+-w_{\mathrm{car}}\dfrac{\mathrm{Gap}_{\mathrm{car}}}{n_{\mathrm{car}}}, & \text{otherwise}
 \end{cases}
 $$
 
@@ -76,7 +76,7 @@ $$
 C_{\mathrm{traffic,2}}^{\,i}=
 \begin{cases}
 c_f\dfrac{v_{\mathrm{ego}}}{v_{\mathrm{target}}}, & s_{\mathrm{target}}>\mathrm{Gap}_i.l \\
--\,c_b\dfrac{v_{\mathrm{target}}}{v_{\mathrm{ego}}}, & s_{\mathrm{target}}<\mathrm{Gap}_i.l
+-c_b\dfrac{v_{\mathrm{target}}}{v_{\mathrm{ego}}}, & s_{\mathrm{target}}<\mathrm{Gap}_i.l
 \end{cases}
 $$
 
@@ -92,7 +92,7 @@ $$
 
 $$
 C_{\mathrm{long}}^{\,i}
-=1-\frac{\min\!\left(A_f,B_f\right)-\max\!\left(A_r,B_r\right)}{\mathrm{Gap}_A.l}
+=1-\frac{\min\left(A_f,B_f\right)-\max\left(A_r,B_r\right)}{\mathrm{Gap}_A.l}
 $$
 
 $$
@@ -146,14 +146,14 @@ $$
 \begin{cases}
 \mathrm{Gap}_{l}^{\text{prev}}, & \text{$D_F$ or $D_B$ missing in the current frame} \\
 0, & \text{missing persists for $N$ frames or more} \\
-\max\!\bigl(0,\ D_F+D_B-L_{\mathrm{safe}}\bigr), & \text{both $D_F$ and $D_B$ observed}
+\max\bigl(0,\ D_F+D_B-L_{\mathrm{safe}}\bigr), & \text{both $D_F$ and $D_B$ observed}
 \end{cases}
 $$
 
 **Publish**
 
 $$
-\bigl[\ \mathrm{Gap}_{\mathrm{front}},\ \mathrm{Gap}_{\mathrm{left}},\ \mathrm{Gap}_{\mathrm{right}}\ \bigr]^{\!\top}
+\bigl[\ \mathrm{Gap}_{\mathrm{front}},\ \mathrm{Gap}_{\mathrm{left}},\ \mathrm{Gap}_{\mathrm{right}}\ \bigr]^{\top}
 $$
 
 ### (2) MIO Selection
@@ -173,7 +173,7 @@ We therefore extend the **lateral** trajectory with a **Pythagorean Hodograph (P
 A PH curve is defined by
 
 $$
-\mathbf{r}(t)=\int_{0}^{t}\!\!\left(u(\tau)^2-v(\tau)^2,\; 2\,u(\tau)v(\tau)\right)\,d\tau
+\mathbf{r}(t)=\int_{0}^{t}\left(u(\tau)^2-v(\tau)^2, 2u(\tau)v(\tau)\right)\,d\tau
 $$
 
 where $u(t)$ and $v(t)$ are polynomials.  
@@ -186,7 +186,7 @@ $$
 Thus, the **arc length** admits a closed form:
 
 $$
-L(t)=\int_{0}^{t}\!\left(u(\tau)^2+v(\tau)^2\right)\,d\tau
+L(t)=\int_{0}^{t}\left(u(\tau)^2+v(\tau)^2\right)\,d\tau
 $$
 
 and the curvature is:
@@ -214,7 +214,7 @@ $$
 Construct  
 
 $$
-\mathbf{r}(t) = \int_{0}^{t} \bigl(u(\tau)^2 - v(\tau)^2,\; 2\,u(\tau)v(\tau)\bigr)\,d\tau
+\mathbf{r}(t) = \int_{0}^{t} \bigl(u(\tau)^2 - v(\tau)^2, 2u(\tau)v(\tau)\bigr)\,d\tau
 $$  
 
 to satisfy boundary conditions  
@@ -230,7 +230,6 @@ PH trajectories naturally yield lower $C_j$ and $C_k$, suppressing jerk and curv
 
 Guarantees continuity of steering angle and curvature-rate, improving **steering stability**.
 
-![PH-based evasive path illustration](../../../images/avo4.png)
 
 <br/>
 <img src="../../../images/avo4.png" width="760" alt="PH-based evasive path illustration"/>
@@ -251,26 +250,62 @@ The full system consists of **Perception → TDM → TG**, operating in real tim
 
 ## (1) Perception and Data Fusion
 
-To robustly output distances in real time from YOLOv8 detections, we design a confidence-based fusion of Camera, Depth, and LiDAR. A single sensor (Depth or LiDAR) alone often suffers from noise or missed detections; thus we combine them with distance-dependent weighting.
+To robustly output distances in real time from YOLOv8 detections,  
+we design a **confidence-based fusion** of Camera, Depth, and LiDAR.  
+A single sensor (Depth or LiDAR) alone often suffers from noise or missed detections.  
+Thus, we combine them with distance-dependent weighting.
 
-Implementation ideas:
+---
 
-- YOLOv8 provides real-time object class and position. Depth samples from the center and lower parts of each box are filtered by mean/median (IQR) to get an initial distance \( d_{\mathrm{depth}} \).
-- LiDAR ranges \( d_{\mathrm{LiDAR}} \) are computed using rays near the object’s bearing \( \theta \).
-- Distance-based weight \( \alpha(d) \) blends the two: emphasize camera within \( 3\,\mathrm{m} \) and LiDAR beyond that. The fused range is:
+**Step 1. YOLOv8 Object Detection**
+
+YOLOv8 provides real-time object class and position.  
+Depth samples from the center and lower parts of each bounding box are filtered by mean/median (IQR)  
+to obtain an initial distance.
 
 $$
-d_{\mathrm{fused}}
-=
-\alpha(d)\,d_{\mathrm{depth}}
-+
-\bigl(1-\alpha(d)\bigr)\,d_{\mathrm{LiDAR}},
-\qquad
-\alpha(d)\in[0,1]
+d_{\mathrm{depth}}
 $$
 
-- Apply EMA to stabilize frame-to-frame variation; in outliers or missed detections, hold the previous frame value.
-- Use a lane mask to classify each object as current or adjacent lane, and pass only valid objects to TDM.
+---
+
+**Step 2. LiDAR Distance Extraction**
+
+LiDAR ranges are computed using rays near the object’s bearing angle.
+
+$$
+d_{\mathrm{LiDAR}}
+$$
+
+---
+
+**Step 3. Distance-based Fusion Weight**
+
+The distance-based weight blends the two measurements:  
+it emphasizes the camera within approximately 3 m,  
+and LiDAR for longer distances.  
+The fused distance is defined as:
+
+$$
+d_{\mathrm{fused}} = \alpha(d)d_{\mathrm{depth}} + \bigl(1-\alpha(d)\bigr)d_{\mathrm{LiDAR}} \qquad \alpha(d)\in[0,1]
+$$
+
+---
+
+**Step 4. Frame Smoothing**
+
+Apply **EMA** (Exponential Moving Average)  
+to stabilize frame-to-frame variation.  
+In the case of outliers or missed detections,  
+the previous frame’s value is held constant.
+
+---
+
+**Step 5. Lane-based Classification**
+
+Using the lane mask,  
+each detected object is classified as belonging to the **current lane** or an **adjacent lane**.  
+Only valid objects are passed to the **TDM module**.
 
 ---
 
@@ -306,10 +341,11 @@ $$
 
 ---
 
-### (3) TG Implementation
+## (3) TG Implementation
 
 Using the TDM decision, TG generates the drivable trajectory in real time.  
-In a two-lane scenario, the behavior is either **Keep** or **Change**, and the lateral terminal condition is:
+In a two-lane scenario, the behavior is either **Keep** or **Change**,  
+and the lateral terminal condition is defined as:
 
 $$
 y(T) =
@@ -319,27 +355,32 @@ y_{\mathrm{center,current}} \pm W_{\mathrm{lane}}, & \text{Change}
 \end{cases}
 $$
 
-**Implementation ideas**
-- Replace conventional lateral polynomials with **PH** so that both curvature $\kappa$ and curvature-rate $\dot{\kappa}$ are continuous.
-- PH curve:
+---
 
-  $$
-  \mathbf{r}(t) = \int_{0}^{t} \bigl(u(\tau)^2 - v(\tau)^2,\; 2\,u(\tau)v(\tau)\bigr)\,d\tau
-  $$
+**PH curve definition**
 
-- Closed-form arc length (distance-based control without numerical integration):
+$$
+\mathbf{r}(t) = \int_{0}^{t} \bigl(u(\tau)^{2}-v(\tau)^{2},\; 2\,u(\tau)v(\tau)\bigr)\,d\tau
+$$
 
-  $$
-  L(t) = \int_{0}^{t} \bigl(u(\tau)^2 + v(\tau)^2\bigr)\,d\tau
-  $$
+---
 
-- Curvature:
+**Closed-form arc length (distance-based control without numerical integration)**
 
-  $$
-  \kappa(t) = \frac{2(\dot{u}\,v - u\,\dot{v})}{(u^2 + v^2)^2}
-  $$
+$$
+L(t) = \int_{0}^{t} \bigl(u(\tau)^{2}+v(\tau)^{2}\bigr)\,d\tau
+$$
 
-These ensure continuity of $\kappa$ and $\dot{\kappa}$, suppressing abrupt changes of steering angle $\delta$ and steering rate $\dot{\delta}$.
+---
+
+**Curvature**
+
+$$
+\kappa(t) = \frac{2\bigl(\dot{u}\,v - u\,\dot{v}\bigr)}{\bigl(u^{2}+v^{2}\bigr)^{2}}
+$$
+
+These ensure continuity of $\kappa$ and $\dot{\kappa}$,  
+suppressing abrupt changes of steering angle $\delta$ and steering rate $\dot{\delta}$.
 
 
 ---
