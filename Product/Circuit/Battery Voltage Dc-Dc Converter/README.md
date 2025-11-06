@@ -13,11 +13,11 @@ We defined input variations and load profiles, evaluated topologies using **PSIM
 
 The overall flow was:
 
-1) Parameter calculation →  
-2) **Open-Loop Test** →  
-3) Current sensing (CT/sense-resistor) and slope-compensation parameter design →  
-4) **Open-Loop Test** (re-run) →  
-5) Loop-stability review (compensator) →  
+1) Parameter calculation 
+2) **Open-Loop Test** 
+3) Current sensing (CT/sense-resistor) and slope-compensation parameter design 
+4) **Open-Loop Test** (re-run) 
+5) Loop-stability review (compensator)  
 6) **Closed-Loop Test**
 
 Simulations confirmed rated-load operation achieving the target output (e.g., **19 V / 5 A**) and reduced ripple/thermal stress compared with a single-phase converter.
