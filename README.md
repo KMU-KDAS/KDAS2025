@@ -4,7 +4,7 @@
 
 <img src="images/kdasmain.gif" alt="KDAS" width="800"/>
 
-The **Kookmin Autonomous Driving System (KMU-KDAS)** is a full-stack autonomous RC-car platform  
+The **Kookmin Autonomous Driving System (KMU-KDAS)** is a full-stack autonomous RC-car platform
 developed for the **Quanser Autonomous Car Competition (ACC)**.  
 This repository documents our journey from basic vehicle dynamics simulation to a fully integrated  
 ROS2-based AI driving system running on the QCar2 hardware.
