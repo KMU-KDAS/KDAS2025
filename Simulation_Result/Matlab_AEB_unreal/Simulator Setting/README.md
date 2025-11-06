@@ -238,15 +238,24 @@ While braking, steering commands are held constant to minimize lateral load tran
 Simulation results:
 
 ![Relative distance](../../../images/aebs13.png)  
-![TTC](../../../images/aebs14.png)  
-![Deceleration](../../../images/aebs15.png)  
+Relative distance
+
+![TTC](../../../images/aebs14.png)
+TTC
+
+![Deceleration](../../../images/aebs15.png)
+Deceleration
+
 ![Relative velocity](../../../images/aebs16.png)  
+Relative velocity
+
 ![Ego velocity](../../../images/aebs17.png)
+Ego velocity
 
 **Analysis:**  
-The lead vehicle runs slower than ego. Relative distance reaches a minimum near 3 s, then increases as braking engages.  
+In this scenario, the lead vehicle moves slower than the ego vehicle. Relative distance reaches a minimum near 3 s, then increases as braking engages.  
 TTC decreases sharply around 3.5 s and becomes negative as |v_rel| approaches zero.  
-Deceleration increases stepwise (PB1 → PB2 → FB), validating the stage logic.  
+Deceleration increases stepwise, validating the stage logic.  
 Relative velocity approaches zero after braking, and ego velocity decreases steadily, avoiding collision.
 
 ---
