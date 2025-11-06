@@ -42,13 +42,13 @@ We employ both **Tyre (Magic Tyre)** and **Bicycle** models. The key parameters 
 
 ### Brake Model
 
-![Brake model](../images/aebs1.png)
+![Brake model](../../images/aebs1.png)
 
 The brake model assumes **four identical wheels** and a **front:rear torque split of 3:2**, representing typical load transfer during braking.
 
 ### Wheel Dynamics
 
-![Wheel dynamics](../images/aebs2.png)
+![Wheel dynamics](../../images/aebs2.png)
 
 The wheel dynamics relate shaft torque, brake torque, and longitudinal road force.  
 The tire model provides the effective radius and the longitudinal road force used in wheel balance equations.
@@ -57,7 +57,7 @@ The tire model provides the effective radius and the longitudinal road force use
 
 ### Tyre (Magic Tyre) Model
 
-![Magic Tyre model block](../images/aebs3.png)
+![Magic Tyre model block](../../images/aebs3.png)
 
 We use the Bakker–Pacejka **Magic Tyre Model**, expressed as:
 
@@ -74,7 +74,7 @@ The **slip ratio** (*s*) is defined as:
 s = (h_eff * ω - v) / max(h_eff * ω, v)
 ```
 
-![Slip computation and protection](../images/aebs4.png)
+![Slip computation and protection](../../images/aebs4.png)
 
 Division by zero is prevented using a Switch block that replaces the denominator with 0.01 when needed.
 
@@ -123,11 +123,11 @@ Struct(
 
 ## Unreal Engine Simulation
 
-![UE environment overview](../images/aebs5.png)
+![UE environment overview](../../images/aebs5.png)
 
 The **Automated Driving Toolbox** was used to couple Simulink with Unreal Engine for **3-D visualization** and **intuitive diagnostics**.
 
-![Scenario assets and sensor generation](../images/aebs6.png)
+![Scenario assets and sensor generation](../../images/aebs6.png)
 
 ### Driving Scenario Design
 
@@ -158,14 +158,14 @@ Relative distance and velocity are used to compute **TTC** for braking control.
 
 ## AEB Controller
 
-![AEB top-level controller](../images/aebs7.png)
+![AEB top-level controller](../../images/aebs7.png)
 
 The controller includes:
 - **Brake Controller**
 - **Normal Driving Controller** (EKF + NMPC; not essential for straight-line runs)
 - **Mode Selector**
 
-![Braking system sections](../images/aebs8.png)
+![Braking system sections](../../images/aebs8.png)
 
 Three sections run sequentially:
 
@@ -177,7 +177,7 @@ Three sections run sequentially:
 
 ### TTC Computation
 
-![TTC computation block](../images/aebs9.png)
+![TTC computation block](../../images/aebs9.png)
 
 TTC is computed as:
 
@@ -197,7 +197,7 @@ The **sign()** function ensures that negative TTC values represent approach and 
 
 ### Stopping-Time Computation
 
-![Stopping time block](../images/aebs10.png)
+![Stopping time block](../../images/aebs10.png)
 
 Stopping time under deceleration *a* is:
 
@@ -211,7 +211,7 @@ A small time margin is added for safety.
 
 ### AEB Operation Logic (Stateflow)
 
-![AEB Stateflow logic](../images/aebs11.png)
+![AEB Stateflow logic](../../images/aebs11.png)
 
 States:
 - Normal Driving  
@@ -225,7 +225,7 @@ Transition rule: when *TTC < t_stop*, the state advances based on risk level and
 
 ### Mode Selection
 
-![Controller mode selector](../images/aebs12.png)
+![Controller mode selector](../../images/aebs12.png)
 
 The **Controller Mode Selector** receives the AEB state signal and outputs the final brake command.  
 A latching mechanism prevents transient glitches.  
@@ -237,19 +237,19 @@ While braking, steering commands are held constant to minimize lateral load tran
 
 Simulation results:
 
-![Relative distance](../images/aebs13.png)  
+![Relative distance](../../images/aebs13.png)  
 Relative distance
 
-![TTC](../images/aebs14.png)
+![TTC](../../images/aebs14.png)
 TTC
 
-![Deceleration](../images/aebs15.png)
+![Deceleration](../../images/aebs15.png)
 Deceleration
 
-![Relative velocity](../images/aebs16.png)  
+![Relative velocity](../../images/aebs16.png)  
 Relative velocity
 
-![Ego velocity](../images/aebs17.png)
+![Ego velocity](../../images/aebs17.png)
 Ego velocity
 
 **Analysis:**  
