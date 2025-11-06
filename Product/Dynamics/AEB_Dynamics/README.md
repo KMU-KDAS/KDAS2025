@@ -19,7 +19,7 @@ Sensor-fused TTC combines:
 to compute a corrected TTC for **AEB logic** and **Evasive Maneuver** decision layers.
 
 <p align="center">
-  <img src="../../../images/aebd1.png" alt="AEB model overview" width="700"/>
+  <img src="../../../images/aebd1.png" alt="AEB model overview" width="900"/>
 </p>
 
 ---
