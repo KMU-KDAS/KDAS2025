@@ -13,7 +13,7 @@ Within the track, an S-shaped cone section and an overtaking section were includ
 
 ## Development Environment
 
-<img src="../images/xyts1.png" width="720" alt="System configuration"/>
+<img src="../../images/xyts1.png" width="720" alt="System configuration"/>
 
 Since our project was based on **ROS2**, we aimed to maintain a unified workflow in that environment.  
 However, the **Xytron simulator** operated on **Unity–ROS1 Noetic** via a **TCP-based Unity Endpoint**, preventing direct integration with ROS2.  
@@ -27,19 +27,19 @@ The system ran on **ROS1 Noetic** and **ROS2 Humble**, which were fully compatib
 
 ## Lane Keeping Algorithm
 
-<img src="../images/xyts2.jpg" width="720" alt="Lane keeping architecture"/>
+<img src="../../images/xyts2.png" width="720" alt="Lane keeping architecture"/>
 
 Lane keeping was the core functionality, and thus, it was the first module to be developed.  
 Because the track had no feature points and the LiDAR was fixed front-facing, **LiDAR-based SLAM** was infeasible.  
 As a result, **position estimation** of the vehicle was impossible, and without a depth camera, **waypoint-based methods** were also unsuitable.
 
-<img src="../images/xyts3.png" width="720" alt="Lane detection concept"/>
+<img src="../../images/xyts3.png" width="720" alt="Lane detection concept"/>
 
 Therefore, we designed a control strategy that computes the **lateral x-coordinate error** between the **lane center** and the **vehicle center**, and corrects this error using a **PID controller**.  
 The vehicle center was defined as the center pixel of the camera image, while the lane center was obtained from **SCNN (SCNN_LaneDetection)**.  
 The PID output represented the **steering angle**, driving the error to converge to zero.
 
-<img src="../images/xyts4.png" width="720" alt="PID gain tuning graph"/>
+<img src="../../images/xyts4.png" width="720" alt="PID gain tuning graph"/>
 
 The PID gains were determined empirically.  
 The graph above compares the offset (lane–vehicle center error) and the steering angle output of the PID controller during tuning.  
@@ -53,7 +53,7 @@ The most stable response was obtained with:
 
 Furthermore, the shapes of the lane error and PID steering output curves showed similar dynamics, confirming satisfactory controller performance.
 
-<img src="../images/xyts5.jpg" width="720" alt="ROI configuration"/>
+<img src="../../images/xyts5.jpg" width="720" alt="ROI configuration"/>
 
 Three **ROI lines** (Y-pixels = 375, 365, 350) were used.  
 Because detecting lanes at farther distances enables earlier steering response, the uppermost ROI (Y=375) was prioritized.  
@@ -64,7 +64,7 @@ This reduced steering loss on sharp curves where higher ROIs may fail.
 
 ## Traffic Cone Navigation
 
-<img src="../images/xyts6.png" width="720" alt="Traffic cone avoidance"/>
+<img src="../../images/xyts6.jpg" width="720" alt="Traffic cone avoidance"/>
 
 In the cone section, the vehicle was controlled to stay centered between left and right cones.  
 Using **LiDAR**, both cone positions were detected, and the **lateral distance difference** was used as the PID error term to generate the steering command.  
@@ -79,7 +79,7 @@ The LiDAR scanning range was limited to **±45–90°**, and the **median of the
 
 ## Vehicle Avoidance Algorithm
 
-<img src="../images/xyts7.jpg" width="720" alt="Vehicle avoidance sequence"/>
+<img src="../../images/xyts7.jpg" width="720" alt="Vehicle avoidance sequence"/>
 
 Vehicle avoidance was triggered automatically when **YOLO** detected a front vehicle.  
 Since no depth camera was available, distance estimation was not directly possible, and LiDAR–camera fusion was infeasible due to time constraints.  
@@ -105,7 +105,7 @@ After a left avoidance, an automatic **right-lane recovery** was executed to ens
 
 ## Traffic Light Detection
 
-<img src="../images/xyts8.png" width="720" alt="Traffic light detection"/>
+<img src="../../images/xyts8.png" width="720" alt="Traffic light detection"/>
 
 YOLO was also used to classify **traffic light colors**.  
 Since the simulation environment lacked visual disturbances such as lighting reflections or weather effects,  
