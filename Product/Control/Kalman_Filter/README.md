@@ -147,7 +147,7 @@ $$
 
 ---
 
-##  7. Summary
+##  7. Summary 
 
 - The proposed Kalman Filter effectively mitigated **SLAM position jitter** (2nd–3rd decimal place), enhancing tracking stability.  
 - Real-time fusion between **Simulink vehicle dynamics (F, u)** and **ROS2 sensor data** provided smooth localization on narrow, curved tracks.  
