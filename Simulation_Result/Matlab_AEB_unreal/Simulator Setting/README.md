@@ -50,7 +50,7 @@ Both **Tyre Model** and **Bicycle Model** were used; their main parameters are s
 ### Brake Model
 
 <br/>
-<img src="-aebs1.png" width="820" alt="Brake model diagram"/>
+<img src="../../../images/aebs1.png" width="820" alt="Brake model diagram"/>
 
 The braking system assumes four identical wheels with a **front/rear torque ratio of 3:2**.  
 This configuration reflects real-world design: due to forward load transfer during braking, front wheels bear greater force.
@@ -60,7 +60,7 @@ This configuration reflects real-world design: due to forward load transfer duri
 ### Wheel Dynamics
 
 <br/>
-<img src="-aebs2.png" width="820" alt="Wheel dynamics block"/>
+<img src="../../../images/aebs2.png" width="820" alt="Wheel dynamics block"/>
 
 The wheel dynamics block implements the following torque balance equation:
 
@@ -75,7 +75,7 @@ The **effective wheel radius** and **longitudinal force** \( F_{\mathrm{road}} \
 ### Magic Tyre Model (Bakker–Pacejka)
 
 <br/>
-<img src="-aebs3.png" width="820" alt="Magic Tyre model and slip computation"/>
+<img src="../../../images/aebs3.png" width="820" alt="Magic Tyre model and slip computation"/>
 
 We used the **Bakker–Pacejka “Magic Tyre Model”**, expressed as:
 
@@ -98,7 +98,7 @@ Division by zero is avoided using a **switch block** that substitutes 0.01 when 
 ### Vehicle Pose via Bicycle Model
 
 <br/>
-<img src="-aebs4.png" width="780" alt="Bicycle model integration"/>
+<img src="../../../images/aebs4.png" width="780" alt="Bicycle model integration"/>
 
 Front and rear longitudinal forces computed above feed into a **Bicycle Model**, which outputs vehicle **pose (x, y, ψ)**.  
 Since this study focuses on **stopping scenarios**, the **steering angle** was fixed at **0 rad**.
@@ -135,9 +135,9 @@ The **Pack Ego Actor** MATLAB Function assembles the data as follows:
 ## Unreal Engine Simulation
 
 <br/>
-<img src="-aebs5.png" width="820" alt="Unreal Engine simulation environment 1"/>
+<img src="../../../images/aebs5.png" width="820" alt="Unreal Engine simulation environment 1"/>
 <br/>
-<img src="-aebs6.png" width="820" alt="Unreal Engine simulation environment 2"/>
+<img src="../../../images/aebs6.png" width="820" alt="Unreal Engine simulation environment 2"/>
 
 We utilized MATLAB’s **Automated Driving Toolbox** to link Simulink with **Unreal Engine**, building a real-time 3D simulation environment.  
 This setup enables **visual validation** of braking dynamics beyond abstract signals.
@@ -174,7 +174,7 @@ The system computes **relative distance**, **relative velocity**, and **TTC**, w
 ## AEB Controller
 
 <br/>
-<img src="-aebs7.png" width="820" alt="AEB controller block"/>
+<img src="../../../images/aebs7.png" width="820" alt="AEB controller block"/>
 
 The AEB controller consists of:
 1. **Brake Controller**
@@ -184,7 +184,7 @@ The AEB controller consists of:
 For straight-line tests, the normal driving controller’s function is minimal; it is retained for consistency with MATLAB’s reference design.
 
 <br/>
-<img src="-aebs8.png" width="820" alt="Brake system sections"/>
+<img src="../../../images/aebs8.png" width="820" alt="Brake system sections"/>
 
 Braking logic is divided into:
 1. **TTC (Time-to-Collision) computation**
@@ -198,7 +198,7 @@ Each follows the flow: *collision risk detection → braking decision → comman
 ### TTC Calculation
 
 <br/>
-<img src="-aebs9.png" width="820" alt="TTC calculation block"/>
+<img src="../../../images/aebs9.png" width="820" alt="TTC calculation block"/>
 
 TTC is computed as:
 
@@ -219,7 +219,7 @@ The TTC sign indicates approach (−) or separation (+).
 ### Stopping Time Estimation
 
 <br/>
-<img src="-aebs10.png" width="820" alt="Stopping time computation"/>
+<img src="../../../images/aebs10.png" width="820" alt="Stopping time computation"/>
 
 Stopping time is derived from:
 
@@ -235,7 +235,7 @@ A safety margin is added to accommodate delays and ensure comfortable stops.
 ### AEB Operation Logic
 
 <br/>
-<img src="-aebs11.png" width="820" alt="AEB Stateflow logic"/>
+<img src="../../../images/aebs11.png" width="820" alt="AEB Stateflow logic"/>
 
 Implemented in **Stateflow**, the logic manages discrete braking states:
 
@@ -252,7 +252,7 @@ When \( \mathrm{TTC} < t_{\mathrm{stop}} \), the system shifts to a braking stat
 ### Mode Selection
 
 <br/>
-<img src="-aebs12.png" width="820" alt="Controller mode selector"/>
+<img src="../../../images/aebs12.png" width="820" alt="Controller mode selector"/>
 
 The **Mode Selector** receives AEB status and outputs the corresponding brake command.
 
@@ -266,15 +266,15 @@ The **Mode Selector** receives AEB status and outputs the corresponding brake co
 ## Results & Analysis
 
 <br/>
-<img src="-aebs13.png" width="760" alt="Relative distance graph"/>
+<img src="../../../images/aebs13.png" width="760" alt="Relative distance graph"/>
 <br/>
-<img src="-aebs14.png" width="760" alt="TTC graph"/>
+<img src="../../../images/aebs14.png" width="760" alt="TTC graph"/>
 <br/>
-<img src="-aebs15.png" width="760" alt="Deceleration graph"/>
+<img src="../../../images/aebs15.png" width="760" alt="Deceleration graph"/>
 <br/>
-<img src="-aebs16.png" width="760" alt="Relative velocity graph"/>
+<img src="../../../images/aebs16.png" width="760" alt="Relative velocity graph"/>
 <br/>
-<img src="-aebs17.png" width="760" alt="Ego velocity graph"/>
+<img src="../../../images/aebs17.png" width="760" alt="Ego velocity graph"/>
 
 When the lead vehicle moved slower than ego, the relative distance minimized around **3 s**, then increased as braking activated.  
 Deceleration increased stepwise, corresponding to AEB stages.  
