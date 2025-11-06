@@ -1,4 +1,4 @@
-# Autonomous Evasive Maneuver (자율주행 회피기동)
+# Autonomous Evasive Maneuver
 
 Autonomous vehicles frequently encounter sudden obstacles in the front or on the sides while driving. In such cases, the vehicle must execute an **evasive maneuver** safely without collision and, to do so, it requires an algorithm that generates safe and efficient trajectories **in real time** as the environment changes.  
 To simultaneously secure **efficiency** and **stability**, we design the evasive maneuver algorithm as a **hybrid architecture** split into two parts:
@@ -437,8 +437,33 @@ The following figures show trajectory visualizations for representative cases.
 
 
 
-| <img src="../../../images/avo6.gif" width="410" alt="Case A PH trajectory"/> | <img src="../../../images/avo7.gif" width="410" alt="Case A second view"/> |
-| <img src="../../../images/avo8.gif" width="410" alt="Case B PH trajectory"/> | <img src="../../../images/avo9.gif" width="410" alt="Case B second view"/> |
+
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <img src="../../../images/avo6.gif" alt="PH trajectory" width="400"/><br/>
+      <b>Large Obstacle</b>
+    </td>
+    <td align="center" valign="top">
+      <img src="../../../images/avo7.gif" alt="PH trajectory" width="400"/><br/>
+      <b>Small Obstacle</b>
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <img src="../../../images/avo8.gif" alt="PH trajectory" width="400"/><br/>
+      <b>Right direction</b>
+    </td>
+    <td align="center" valign="top">
+      <img src="../../../images/avo9.gif" alt="PH trajectory" width="400"/><br/>
+      <b>Left direction</b>
+    </td>
+  </tr>
+</table>
+
 
 ---
 
