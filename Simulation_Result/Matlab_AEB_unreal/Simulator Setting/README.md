@@ -1,338 +1,266 @@
-# Setup & Simulation Environment
+# AEB Simulation Setup & Environment
 
-To verify the performance of the AEB (Autonomous Emergency Braking) algorithm, we constructed a simulation environment in **Simulink** integrated with **Unreal Engine 3**.  
-The system was developed on **MATLAB R2024b**, using the default **variable-step solver (ode45)**.
+We verified the AEB algorithm in a Simulink + Unreal Engine 3–based simulation.  
+The project was developed on **MATLAB R2024b** with the **default variable-step** configuration and **ode45** solver.
 
-Simulink enables hybrid simulation combining **continuous** (e.g., vehicle dynamics) and **discrete** (e.g., sensors, controllers) subsystems.  
-Each block’s sample time is explicitly defined so that the solver integrates continuous states while discrete subsystems are updated coherently via **ZOH** and **Rate Transition** blocks.  
-
-By linking to Unreal Engine, the system provides **visual and intuitive validation**, allowing evaluation not only through mathematical signals but also within a realistic 3D driving environment.
+Simulink supports mixed **continuous** (vehicle dynamics) and **discrete** (sensors/controllers) execution in one model.  
+Each block is given a sample time; the solver integrates continuous states while discrete blocks are updated coherently through ZOH / Rate Transition.  
+Linking with Unreal enables **visual and intuitive** validation in addition to purely mathematical analysis.
 
 ---
 
 ## Setup Script
 
-Simulation parameters were batch-defined through a **Setup Script** to ensure efficient configuration and repeatability.  
-This approach allowed fast parameter tuning, reduced human error, and enabled consistent multi-scenario testing.
+Key model parameters are defined centrally in a **Setup Script** so we can sweep scenarios consistently and avoid configuration mistakes.
 
-Main parameters include:
+- `maxSteer`, `minSteer`, `min_ac`, `max_ac`, `max_dc`  
+  → Actuation constraints (steering limits, accel/decel bounds) from MATLAB examples and typical passenger-car limits.
 
-- **`maxSteer, minSteer, min_ac, max_ac, max_dc`**  
-  Define steering and acceleration constraints (actuation limits).  
-  Values were based on MATLAB references and physical limits of standard passenger vehicles.
+- `PB1_decel`, `PB2_decel`, `FB_decel`  
+  → Stage-wise deceleration for AEB (Partial Brake 1/2, Full Brake) depending on relative distance and ego speed.
 
-- **`PB1_decel, PB2_decel, FB_decel`**  
-  Define deceleration stages for AEB activation.  
-  PB1 = mildest braking, FB = full braking.  
-  The stage depends on relative distance and vehicle speed.
+> Vehicle-dynamics parameters should ideally come from measurement. In this study, we used values from MATLAB examples and course notes due to measurement constraints.
 
-The most critical parameters are those governing **vehicle dynamics**.  
-Although these are ideally measured experimentally, limited resources required estimation from MATLAB examples and course materials.
-
-Both **Tyre Model** and **Bicycle Model** were used; their main parameters are summarized below.
+We employ both **Tire (Magic Tyre)** and **Bicycle** models; key parameters are:
 
 | Variable | Definition |
-|-----------|-------------|
+|---|---|
 | `m` | Vehicle mass |
 | `Iz` | Yaw inertia |
-| `lf`, `lr` | Distances from CG to front/rear axle |
-| `Cf`, `Cr` | Cornering stiffness (front/rear) |
+| `lf, lr` | CG to front/rear axle distances |
+| `Cf, Cr` | Cornering stiffness (front/rear) |
 | `mu_B / C / D / E` | Magic Tyre model coefficients |
 | `h` | CG height above axle plane |
-| `I_wheel` | Wheel inertia |
-| `h_wheel` | Tire radius |
+| `J_wheel` | Wheel inertia |
+| `r_wheel` | Tire radius |
 | `v_0` | Initial speed |
 
 ---
 
 ## Dynamics Calculations
 
-### Brake Model
-
+### Brake model
 <br/>
 <img src="../../../images/aebs1.png" width="820" alt="Brake model diagram"/>
 
-The braking system assumes four identical wheels with a **front/rear torque ratio of 3:2**.  
-This configuration reflects real-world design: due to forward load transfer during braking, front wheels bear greater force.
-
----
-
-### Wheel Dynamics
+The brake model above assumes four identical wheels and a **front:rear torque split of 3:2**, reflecting typical forward load transfer under braking.
 
 <br/>
-<img src="../../../images/aebs2.png" width="820" alt="Wheel dynamics block"/>
+<img src="../../../images/aebs2.png" width="820" alt="Wheel dynamics diagram"/>
 
-The wheel dynamics block implements the following torque balance equation:
+The wheel dynamics implement the following relationship between torques and longitudinal tire force. The tire model supplies the **effective radius** and the **road force** used in the wheel balance.
 
+### Tire (Magic Tyre) model
+<br/>
+<img src="../../../images/aebs3.png" width="820" alt="Magic Tyre model block"/>
+
+We use the Bakker–Pacejka **Magic Tyre Model**, expressed as:
 $$
-J\dot{\omega} = T_{\mathrm{shaft}} - T_{\mathrm{brake}} - h_{\mathrm{eff}}F_{\mathrm{road}}
+F_{\mathrm{road}}(s)=
+D \,\sin\!\left(
+  C \,\arctan\!\left( B s \;-\; E\big(B s - \arctan(B s)\big) \right)
+\right).
 $$
 
-The **effective wheel radius** and **longitudinal force** \( F_{\mathrm{road}} \) are computed through the tire model.
+This is implemented in a Function block. Input is slip \(s\); camber adjustment is neglected, slip bias \(S_h\) is set to \(0\); coefficients \((B,C,D,E)\) are parameters.
 
----
-
-### Magic Tyre Model (Bakker–Pacejka)
+The **slip ratio** \(s\) is
+$$
+s \;=\; \frac{h_{\mathrm{eff}}\omega - v}{\max(h_{\mathrm{eff}}\omega,\,v)}.
+$$
 
 <br/>
-<img src="../../../images/aebs3.png" width="820" alt="Magic Tyre model and slip computation"/>
+<img src="../../../images/aebs4.png" width="820" alt="Slip computation and protection"/>
 
-We used the **Bakker–Pacejka “Magic Tyre Model”**, expressed as:
+Division-by-zero is prevented with a Switch that substitutes **0.01** when needed.
 
-$$
-F_{\mathrm{road}} = D \sin\!\big[C \arctan\!\big\{B(S + S_h) - E\big(B(S + S_h) - \arctan(B(S + S_h))\big)\big\}\big]
-$$
+### Bicycle model integration
+Front/rear longitudinal forces from brake and tire models feed a **Bicycle Model** to compute the vehicle pose.  
+Because we only evaluate **stopping scenarios**, the steering wheel angle is **fixed at 0 rad**.
 
-The function block takes slip \( s \) as input, assumes no camber adjustment, sets slip bias \( S_h = 0 \), and uses the coefficients \( B, C, D, E \).
+We use the **Automated Driving Toolbox** Bicycle Model block rather than a custom block to match the 3-D simulation stack and minimize integration errors.
 
-Slip ratio \( s \) is defined as:
+For environment consistency we convert **radians → degrees** (where required) and transform coordinates between **NED → NWU**.
 
-$$
-s = \frac{h_{\mathrm{eff}}\omega - v}{\max(h_{\mathrm{eff}}\omega, v)}
-$$
+#### UE actor bus packing
+In Unreal-linked simulation, ego-vehicle data is passed as a struct over the **Actor bus**. The *Pack Ego Actor* MATLAB Function assembles:
+Struct(
+ActorID,
+Position [x, y],
+Velocity [x, y],
+Roll, Pitch, Yaw,
+AngularVelocity [roll, pitch, yaw]
+)
 
-Division by zero is avoided using a **switch block** that substitutes 0.01 when needed.
-
----
-
-### Vehicle Pose via Bicycle Model
-
-<br/>
-<img src="../../../images/aebs4.png" width="780" alt="Bicycle model integration"/>
-
-Front and rear longitudinal forces computed above feed into a **Bicycle Model**, which outputs vehicle **pose (x, y, ψ)**.  
-Since this study focuses on **stopping scenarios**, the **steering angle** was fixed at **0 rad**.
-
-We used MATLAB’s **Automated Driving Toolbox Bicycle Model block** rather than a custom one, ensuring compatibility with 3D simulation while minimizing errors.  
-For environmental consistency, all angular units were converted **(radians → degrees)**, and coordinate systems were transformed **(NED → NWU)**.
-
----
-
-### UE Actor Bus Packing
-
-In Unreal-integrated simulation, ego-vehicle data is transferred as a structured message over the **Actor Bus**.  
-The **Pack Ego Actor** MATLAB Function assembles the data as follows:
-
-
-**Key variables and their roles:**
+**Key symbols and context**
 
 | Symbol | Description | Context |
 |---|---|---|
-| \(J_{\omega}\) | Wheel rotational inertia | Wheel dynamics |
+| \(J_\omega\) | Wheel rotational inertia | Wheel dynamics |
 | \(\dot{\omega}\) | Angular acceleration | Wheel dynamics |
 | \(T_{\mathrm{shaft}}\) | Shaft torque | Wheel dynamics |
 | \(T_{\mathrm{brake}}\) | Brake torque | Wheel dynamics |
 | \(h_{\mathrm{eff}}\) | Effective wheel radius | Wheel dynamics, Slip ratio |
 | \(F_{\mathrm{road}}\) | Longitudinal tire force | Wheel dynamics, Tyre model |
-| \(D, C, B, E\) | Magic Tyre model coefficients | Tyre model |
+| \(D,C,B,E\) | Magic Tyre coefficients | Tyre model |
 | \(S_h\) | Slip bias | Tyre model |
-| \(s\) | Slip ratio | Slip ratio computation |
-| \(v\) | Longitudinal vehicle velocity | Slip ratio |
+| \(s\) | Slip ratio | Slip computation |
+| \(v\) | Longitudinal velocity | Slip ratio |
 | \(\omega\) | Wheel angular velocity | Slip ratio |
 
 ---
 
 ## Unreal Engine Simulation
+<br/>
+<img src="../../../images/aebs5.png" width="820" alt="Unreal environment overview"/>
+
+We used Automated Driving Toolbox to couple Simulink with Unreal Engine for **3-D visualization** and **intuitive diagnostics** beyond numeric plots.
 
 <br/>
-<img src="../../../images/aebs5.png" width="820" alt="Unreal Engine simulation environment 1"/>
-<br/>
-<img src="../../../images/aebs6.png" width="820" alt="Unreal Engine simulation environment 2"/>
+<img src="../../../images/aebs6.png" width="820" alt="Scenario assets and sensor generation"/>
 
-We utilized MATLAB’s **Automated Driving Toolbox** to link Simulink with **Unreal Engine**, building a real-time 3D simulation environment.  
-This setup enables **visual validation** of braking dynamics beyond abstract signals.
+### Driving scenario design
+Two vehicles (Ego, Lead) run **straight-line** paths to isolate AEB performance. We prepare **low/mid/high-speed** cases and evaluate **TTC-based braking**.
+
+Since no physical sensors exist in the virtual world, we **generate** sensor data in simulation:
+- **Cuboid to 3-D Simulation** converts objects to 3-D entities,
+- **Simulation 3-D Vehicle with Ground Following** defines/updates the vehicles,
+- **Detection Concatenation** + **Multi-Object Tracker** perform sensor fusion and tracking.
+
+> Our goal is AEB control evaluation; therefore we use built-in MATLAB blocks for perception rather than custom recognition networks.
 
 ---
 
-### Driving Scenario Design
+## Lead Car Detection
 
-The simulation involves two vehicles — **Ego** and **Lead** — both following straight-line paths to focus exclusively on AEB performance.  
-Three speed cases (low, medium, high) were tested to evaluate **TTC-based braking** under varying conditions.
+We determine if a **lead vehicle** exists by comparing tracker outputs with ego pose:
 
-Since no physical sensors exist in the virtual world, **synthetic sensor data** was generated via simulation blocks:
-- **Cuboid to 3D Simulation** converts object data to 3D form.
-- **Simulation 3D Vehicle with Ground Following** defines ego geometry and motion.
+- If **\(x>0\)** → object is ahead of ego.
+- If **\(|y| \le 1.8\,\mathrm{m}\)** → object lies within ±1.8 m lateral band (≈ lane width / 2) assuming ego tracks lane center.
 
-The generated data was fused and tracked using **Detection Concatenation** and **Multi-Object Tracker** blocks, forming the perception layer for AEB evaluation.
-
----
-
-## Lead Vehicle Detection
-
-For reliable AEB triggering, it is crucial to detect whether a **lead vehicle** is present ahead.
-
-From tracker outputs:
-- \(x > 0\): the object is ahead of ego  
-- \(|y| \le 1.8\,m\): the object lies within the same lane
-
-Given typical lane width ≈ 3.6 m, this region defines the **collision risk zone**.  
-If both conditions are satisfied, the object is labeled as a lead vehicle.  
-The system computes **relative distance**, **relative velocity**, and **TTC**, which drives the **braking logic**.
+When both hold, the system treats the object as a **lead vehicle**, then computes **relative distance** and **relative velocity**, from which **TTC** is derived for deceleration control.
 
 ---
 
 ## AEB Controller
 
-<br/>
-<img src="../../../images/aebs7.png" width="820" alt="AEB controller block"/>
-
-The AEB controller consists of:
-1. **Brake Controller**
-2. **Normal Driving Controller** (EKF + NMPC)
-3. **Mode Selector**
-
-For straight-line tests, the normal driving controller’s function is minimal; it is retained for consistency with MATLAB’s reference design.
+We adopt a **TTC**-based strategy because it is simple, intuitive, and suitable for real-time execution.
 
 <br/>
-<img src="../../../images/aebs8.png" width="820" alt="Brake system sections"/>
+<img src="../../../images/aebs7.png" width="820" alt="AEB top-level controller"/>
 
-Braking logic is divided into:
-1. **TTC (Time-to-Collision) computation**
-2. **Stopping time estimation**
-3. **AEB operation logic (Stateflow)**
+The controller has:
+- **Brake Controller**,  
+- **Normal Driving Controller** (EKF + NMPC; retained from MATLAB example but not central for straight runs),
+- **Mode Selector**.
 
-Each follows the flow: *collision risk detection → braking decision → command execution*.
+### Braking system structure
+<br/>
+<img src="../../../images/aebs8.png" width="820" alt="Braking system sections"/>
 
----
+Three sections run in sequence:
 
-### TTC Calculation
+1) **TTC computation**  
+2) **Stopping-time computation**  
+3) **AEB operation logic** (Stateflow)
 
 <br/>
-<img src="../../../images/aebs9.png" width="820" alt="TTC calculation block"/>
+<img src="../../../images/aebs9.png" width="820" alt="TTC computation block"/>
 
-TTC is computed as:
-
+**TTC** is computed as
 $$
-\mathrm{TTC} = \operatorname{sign}(v_{\mathrm{rel}})\frac{d_{\mathrm{rel}} - h_0}{|v_{\mathrm{rel}}|}
+\mathrm{TTC} \;=\; \mathrm{sign}\!\left(v_{\mathrm{rel}}\right)\;
+\frac{d_{\mathrm{rel}} - h_0}{\lvert v_{\mathrm{rel}}\rvert},
 $$
-
 where  
-- \(d_{\mathrm{rel}}\): relative distance  
-- \(v_{\mathrm{rel}}\): relative velocity  
-- \(h_0\): headway offset (safety distance)
+\(d_{\mathrm{rel}}\): relative distance,  
+\(v_{\mathrm{rel}}\): relative velocity,  
+\(h_0\): headway offset (safety distance).
 
-A **Saturation block** prevents division by zero, and sign restoration ensures correct directionality.  
-The TTC sign indicates approach (−) or separation (+).
-
----
-
-### Stopping Time Estimation
+A **Saturation** block prevents division by zero; we explicitly restore the **sign** to preserve approach (negative TTC) vs separation (positive TTC).
 
 <br/>
-<img src="../../../images/aebs10.png" width="820" alt="Stopping time computation"/>
+<img src="../../../images/aebs10.png" width="820" alt="Stopping time block"/>
 
-Stopping time is derived from:
-
+**Stopping time** under a given deceleration \(a\) is
 $$
-t_{\mathrm{stop}} = \frac{v}{a}
+t_{\mathrm{stop}} \;=\; \frac{v}{a},
 $$
-
-where \(v\) is current velocity and \(a\) is applied deceleration.  
-A safety margin is added to accommodate delays and ensure comfortable stops.
-
----
-
-### AEB Operation Logic
+with an added **time margin** for safety.
 
 <br/>
 <img src="../../../images/aebs11.png" width="820" alt="AEB Stateflow logic"/>
 
-Implemented in **Stateflow**, the logic manages discrete braking states:
+The **Stateflow** machine defines the states:
+- Normal Driving
+- Alert
+- Partial Braking
+- Full Braking
 
-- **Normal Driving**
-- **Alert**
-- **Partial Braking**
-- **Full Braking**
+**Transition rule:** when \(\mathrm{TTC} < t_{\mathrm{stop}}\), the state advances according to the risk level and outputs the corresponding **deceleration command**.
 
-Transition condition:  
-When \( \mathrm{TTC} < t_{\mathrm{stop}} \), the system shifts to a braking state corresponding to the risk level and outputs the associated **deceleration command**.
-
----
-
-### Mode Selection
-
+### Mode selection
 <br/>
 <img src="../../../images/aebs12.png" width="820" alt="Controller mode selector"/>
 
-The **Mode Selector** receives AEB status and outputs the corresponding brake command.
-
-- Normal: 0 (no braking)  
-- Partial: increasing brake torque  
-- Latching logic prevents signal loss  
-- During braking, **steering** is held constant to avoid lateral load transfer and maintain maximum braking force.
+The **Controller Mode Selector** takes the AEB status from Stateflow and outputs the final brake command.  
+Latching prevents spurious release due to transient signal glitches.  
+While braking is active, **steering is held** (no steering commands) to avoid lateral load transfer and to maximize braking force.
 
 ---
 
-## Results & Analysis
+## Results and Discussion
 
-<br/>
-<img src="../../../images/aebs13.png" width="760" alt="Relative distance graph"/>
-<br/>
-<img src="../../../images/aebs14.png" width="760" alt="TTC graph"/>
-<br/>
-<img src="../../../images/aebs15.png" width="760" alt="Deceleration graph"/>
-<br/>
-<img src="../../../images/aebs16.png" width="760" alt="Relative velocity graph"/>
-<br/>
-<img src="../../../images/aebs17.png" width="760" alt="Ego velocity graph"/>
+We implemented the AEB system with Simulink + Stateflow and validated it in Unreal.
 
-When the lead vehicle moved slower than ego, the relative distance minimized around **3 s**, then increased as braking activated.  
-Deceleration increased stepwise, corresponding to AEB stages.  
-TTC dropped sharply (~3.5 s) due to diminishing denominator \(v_{\mathrm{rel}}\), then stabilized as braking progressed.  
-Relative velocity converged to zero, confirming safe separation.  
-Ego speed decreased smoothly after 4 s, validating the correct behavior of the TTC-based control logic.
+**Plots**
+<br/>
+<img src="../../../images/aebs13.png" width="820" alt="Relative distance"/>
+<br/>
+<img src="../../../images/aebs14.png" width="820" alt="TTC"/>
+<br/>
+<img src="../../../images/aebs15.png" width="820" alt="Deceleration"/>
+<br/>
+<img src="../../../images/aebs16.png" width="820" alt="Relative velocity"/>
+<br/>
+<img src="../../../images/aebs17.png" width="820" alt="Ego velocity"/>
 
-By integrating Unreal Engine visualization, real-time **vehicle interaction**, **stopping distance**, and **collision risk** could be observed dynamically.
+**Detailed signal analysis**
+
+In a scenario where the lead vehicle runs slower than ego:
+
+- **Relative distance** reaches a minimum near **3 s**, then increases as braking engages and ego decelerates.
+- **TTC** drops sharply around **3.5 s** and becomes **negative** with large magnitude as \(|v_{\mathrm{rel}}|\) approaches zero (denominator shrinks). After ego deceleration, TTC stabilizes.
+- **Deceleration** increases in **stages** (PB1 → PB2 → FB) as risk escalates, confirming the stage-wise logic.
+- **Relative velocity** is negative (approaching) before braking, then moves toward zero after intervention.
+- **Ego speed** decreases steadily after ~**4 s**, avoiding collision and restoring a safe gap.
+
+The behavior confirms that the **TTC-based decision** and **stage-wise braking** function as intended.
 
 ---
 
-## Discussion & Future Work
+## Takeaways and Future Work
 
-Current AEB logic uses three discrete braking levels (**PB1**, **PB2**, **FB**).  
-Future implementations may adopt **continuous braking profiles** proportional to risk or velocity change rate for smoother deceleration.
+Linking with Unreal provided **visual validation**—we could inspect vehicle motion, collision distance, and interactions that are not obvious from plots alone.
 
-### TTC Limitations
-TTC assumes constant relative velocity, which fails in:
-- Curved roads (misaligned sensor axis)
-- Rapid acceleration/deceleration
-- Multi-object scenarios (misdetections)
+Currently braking uses **three discrete stages** (PB1, PB2, FB). A future improvement is a **continuous deceleration profile** parameterized by risk or by \(\dot{v}_{\mathrm{rel}}\), to achieve smoother stops.
 
-### Improvement Strategies
-- Adaptive TTC thresholding using real-time acceleration  
-- Prediction-based correction using historical velocity trends  
-- Weighted fusion of multiple risk estimators
+TTC works well but has **limitations** on curves, with acceleration changes, and with multiple objects, because TTC assumes approximately constant relative speed and a straight bearing.
 
-### Comparative Collision Metrics
+**Potential enhancements**
 
-| Method | Concept | Pros | Cons |
+| Name | Concept | Pros | Cons |
 |---|---|---|---|
-| Enhanced TTC | TTC + acceleration | Robust at high accel rates | Sensitive to noise |
-| DRAC | Required deceleration to avoid collision | Intuitive physical meaning | Misinterprets static obstacles |
-| Stopping Distance Index | Braking distance ratio | Reflects braking capability | Hard to estimate lead decel |
-| Risk Function | Weighted sum of distance, speed, accel | Continuous risk estimation | Requires weight design |
-| Collision Possibility | Probabilistic risk | Multi-object handling | Lower real-time response |
-| AI Prediction | Learned collision probability | Handles nonlinear complex cases | Requires large dataset |
+| Enhanced TTC | TTC + acceleration | More stable at high/rapid accel | Sensitive to accel noise |
+| Decel Rate to Avoid Collision | Minimum decel to avoid impact | Physically intuitive | May misjudge static obstacles |
+| Stopping Distance Index | Hazard from stopping-distance ratio | Directly reflects brake capability | Needs lead-car decel estimate |
+| Risk Function | Weighted sum of distance/speed/accel risks | Continuous risk; flexible | Weight design required |
+| Collision Possibility | Probabilistic risk | Handles uncertainty/multi-object | Heavier compute / tuning |
+| AI Prediction | Learned collision probability | Handles nonlinear, complex scenes | Data + training required |
 
-### Curved Road Scenarios
-Curves introduce lateral load, steering, and yaw effects.  
-Possible solutions:
-- Curvilinear TTC (incorporating steering/yaw rate)
-- Early braking thresholds on curves
-- Alternative fusion-based collision detection
+For **curved driving**, add steering/yaw-rate terms (curvilinear TTC) or switch to alternative hazard metrics.
 
----
-
-### Simulation vs Reality
-
-The academic MATLAB–UE setup suffices for basic validation but lacks real-world complexity.  
-Future validation could use **CARLA**, **PreScan**, or **IPG CarMaker** with high-fidelity vehicle models, sensor noise, and road geometry.
-
-Simulations, though idealized, are invaluable for:
-- Algorithm verification
-- Safe debugging
-- Logical validation before field testing
-
-However, real-world deployment requires parameter **recalibration** to handle environmental variations (lighting, road surface, communication latency).  
-Therefore, simulation serves as a **bridge stage** — not a substitute — toward full-scale autonomous driving validation.
+Finally, simulation is controlled and idealized; **real-world transfer** requires calibration due to lighting, surface, sensor noise, and latency.  
+Even so, simulation remains essential for safe early-stage validation and structured debugging. We therefore treat it as a **crucial transition step** toward on-vehicle deployment.
 
 ---
