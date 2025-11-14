@@ -1,4 +1,6 @@
-# KDAS2025 – Kookmin Autonomous Driving Project (KMU-KDAS)
+<img src="images/kdasmain.gif" alt="KDAS" width="800"/>
+
+# KDDAS2025: Kookmin Autonomous Driving System
 
 *Kookmin University Autonomous Driving Research Team – Alpha Project 2024–2025*
 
@@ -6,8 +8,236 @@ The **Kookmin Autonomous Driving System (KMU-KDAS)** is a full-stack autonomous 
 
 ---
 
-## 1. Project Overview and Motivation  
-**Repository:** (root of this repository or `docs/overview/`)
+## 1. Overall Results (Module GIF Summary)
+
+Below are the final results showing each module operating in real time. Click on each caption to open the corresponding folder under `Product/`.
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/SCNN1.gif" width="300"><br>
+      <b><a href="Product/Decision/SCNN/">Lane Detection (SCNN)</a></b>
+    </td>
+    <td align="center">
+      <img src="images/yolo10.gif" width="300"><br>
+      <b><a href="Product/Decision/YOLO/">Object Detection (YOLO)</a></b>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/abdq9.gif" width="300"><br>
+      <b><a href="Product/Decision/path%20planning/">Path Planning (RRT + DQN)</a></b>
+    </td>
+    <td align="center">
+      <img src="images/control19.gif" width="300"><br>
+      <b><a href="Product/Control/">Control (Pure Pursuit)</a></b>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/ROS1.gif" width="300"><br>
+      <b><a href="Product/ROS/">ROS2 System Integration</a></b>
+    </td>
+    <td align="center">
+      <img src="images/SCNN11.gif" width="300"><br>
+      <b><a href="Product/Decision/SCNN/">Lane Tracking Visualization</a></b>
+    </td>
+  </tr>
+</table>
+
+---
+
+## 2. Development Story and Repository Overview
+
+This section summarizes the final system modules, representative figures, and links them to the directory structure under `Product/`. It complements the detailed narrative in the later sections.
+
+### 2.1 Overall Results (GIF Summary – Text-Only)
+
+**Repository:** `Product/`
+
+The final system integrates perception, planning, control, and ROS2 infrastructure. Each main module runs in real time on QCar2.
+
+**Module entries:**
+
+- Lane Detection (SCNN): `Product/Decision/SCNN/`  
+- Object Detection (YOLO): `Product/Decision/YOLO/`  
+- Path Planning (RRT + DQN): `Product/Decision/path_planning/`  
+- Control (Pure Pursuit): `Product/Control/`  
+- ROS2 System Integration: `Product/ROS/`  
+
+---
+
+### 2.2 Step 1 – Modeling and Simulation
+
+<img src="images/control18.gif" width="450" alt="Modeling & Simulation (AEB/QCar Dynamics)"/>
+
+**Repository:**  
+- `Product/Dynamics/`  
+- `Product/Control/MPC/`
+
+We began by modeling vehicle dynamics in MATLAB/Simulink:
+
+- **AEB Dynamics:** `Product/Dynamics/AEB_Dynamics/`  
+- **QCar Dynamics:** `Product/Dynamics/QCAR_Dynamics/`
+
+These models allowed us to replicate longitudinal and lateral vehicle motion, design braking strategies, and explore control methods.
+
+Manual PID tuning proved unstable under varying loads. This led to the development of:
+
+- an automatic tuning pipeline, and  
+- an MPC controller at `Product/Control/MPC/` for TTC-based braking.
+
+**Result:** stable braking under dynamic conditions using MPC.
+
+---
+
+### 2.3 Step 2 – Real-Vehicle Implementation
+
+<img src="images/control19.gif" width="450" alt="Real Vehicle Control (Pure Pursuit on QCar2)"/>
+
+**Repository:**  
+- `Product/Control/Steering_Control_&_Braking/`
+
+We transitioned from simulation to real hardware control using **STM32** and **VESC**.
+
+The **Pure Pursuit controller** in `Product/Control/Steering_Control_&_Braking/` was validated as our final steering algorithm due to its robust low-speed performance and smooth path tracking.
+
+Initial tests with Stanley revealed oscillations and understeering issues at higher speeds, whereas Pure Pursuit aligned steering with lookahead geometry and provided stable behavior.
+
+**Result:** smooth and stable real-vehicle steering control.
+
+---
+
+### 2.4 Step 3 – Perception (Sensor Integration)
+
+<img src="images/SCNN10.gif" width="450" alt="Perception – Sensor Integration Overview"/>
+
+**Repository:**  
+- `Product/Sensors/`
+
+To perceive the environment, we integrated:
+
+- **RPLiDAR A2M12** for 360° mapping,  
+- **RealSense D435i** for RGB-D semantics, and  
+- **encoders** for odometry.
+
+The sensor setup is described in `Product/Sensors/`, where we detail ROS2 topics and fusion rationale.
+
+- **Problem:** reliability of single sensors degraded under reflections and shadows.  
+- **Solution:** multi-sensor fusion improved robustness across varying conditions.
+
+---
+
+### 2.5 Step 4 – Localization
+
+<img src="images/local2.jpg" width="450" alt="Localization – Cartographer Map and Trajectory"/>
+
+**Repository:**  
+- `Product/Localization/`
+
+Accurate localization was essential for stable planning. We evaluated:
+
+- **AMCL**, and  
+- **Cartographer**
+
+under `Product/Localization/`.
+
+AMCL suffered from drift and map dependency, while Cartographer offered:
+
+- real-time loop closure,  
+- map correction, and  
+- robust LiDAR-based scan matching.
+
+**Result:** Cartographer was selected as the default SLAM backend, achieving pose errors on the order of centimeters.
+
+---
+
+### 2.6 Step 5 – Deep Learning-Based Perception (SCNN / YOLO / LSTM)
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/SCNN10.gif" width="260"><br>
+      <b><a href="Product/Decision/SCNN/">SCNN – Lane Detection</a></b>
+    </td>
+    <td align="center">
+      <img src="images/SCNN11.gif" width="260"><br>
+      <b><a href="Product/Decision/SCNN/">SCNN – Lane Tracking</a></b>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/yolo9.gif" width="260"><br>
+      <b><a href="Product/Decision/YOLO/">YOLOv8s – Object Detection</a></b>
+    </td>
+    <td align="center">
+      <img src="images/yolo11.gif" width="260"><br>
+      <b><a href="Product/Decision/YOLO/">YOLOv8s – Traffic Light & Sign</a></b>
+    </td>
+  </tr>
+</table>
+
+**Repository:**
+
+- SCNN: `Product/Decision/SCNN/`  
+- YOLOv8s: `Product/Decision/YOLO/`  
+- LSTM: `Product/Decision/Deep_Learning/CAN_DATA(LSTM)/`
+
+We integrated three deep models:
+
+- **SCNN** for lane detection and centerline generation,  
+- **YOLOv8s** for real-time traffic light, sign, and obstacle detection, and  
+- **LSTM** for future-state prediction (e.g., lateral deviation and curvature).
+
+This pipeline enabled proactive control decisions and operated at real-time frame rates.
+
+---
+
+### 2.7 Step 6 – Path Planning and Decision Making
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/rrt1.png" width="260"><br>
+      <b><a href="Product/Decision/path%20planning/RRT/">RRT </a></b>
+    </td>
+    <td align="center">
+      <img src="images/rrt10.png" width="260"><br>
+      <b><a href="Product/Decision/path%20planning/">RRT </a></b>
+    </td>
+  </tr>
+</table>
+
+**Repository:**  
+- `Product/Decision/path_planning/`
+
+Our decision layer combined:
+
+- **RRT:** `Product/Decision/path_planning/RRT/` for safe corridor generation between waypoints,  
+- **DQN:** `Product/Decision/Reinforcement_Learning/DQN/` for learning waypoint ordering to minimize travel cost, and  
+- **PH Curve / Trajectory Generation:** `Product/Decision/path_planning/` for smoothing jagged RRT paths into continuous curves.
+
+**Result:** PH-based smoothing reduced lateral jerk and produced collision-free avoidance paths suitable for real-time control.
+
+---
+
+### 2.8 Step 7 – ROS2 Integration
+
+<img src="images/Ros1.gif" width="450" alt="ROS2 Integration – Full Stack on QCar2"/>
+
+**Repository:**  
+- `Product/ROS/`
+
+All components—SLAM, perception, planning, and control—were unified via ROS2. Nodes communicate through a structured topic tree with carefully tuned QoS settings.
+
+The launch configuration in `Product/ROS/` orchestrates the full system, enabling end-to-end autonomous driving on QCar2 in real time.
+
+**Outcome:** robust, real-time autonomous driving achieved on QCar2 with the full stack under ROS2.
+
+---
+
+## 3. Project Overview and Motivation
+
 
 > “Can we implement the things we learned in class as industry-level technology?”
 
@@ -35,8 +265,9 @@ The core of this project was the belief that we could build real technology with
 
 ---
 
-## 2. First Challenge – Motor Control (PID Autotuning)  
-**Repository:** `Product/Control/PID_Autotuning/`
+## 4. First Challenge – Motor Control (PID Autotuning)
+
+<img src="images/control18.gif" width="450" alt="Motor Control – PID Autotuning in Simulink"/>
 
 > “What does it actually mean to ‘move’ a vehicle?”
 
@@ -65,8 +296,9 @@ To overcome this inefficiency and uncertainty, we searched for a more systematic
 
 ---
 
-## 3. AEB System Design and Simulation – `Matlab_AEB_Unreal`  
-**Repository:** `Product/Control/AEB/` and `Product/Dynamics/AEB_Dynamics/`
+## 5. AEB System Design and Simulation – `Matlab_AEB_Unreal`
+
+<img src="images/control19.gif" width="450" alt="AEB Braking Response – Simulated Scenario"/>
 
 > “If we can move the vehicle, how do we make it stop safely?”
 
@@ -107,14 +339,15 @@ Most importantly, we implemented the entire pipeline—from modeling to visualiz
 
 ---
 
-## 4. Dynamics Modeling – `AEB_Dynamics` & `QCar_Dynamics`  
-**Repository:** `Product/Dynamics/`
+## 6. Dynamics Modeling – `AEB_Dynamics` & `QCar_Dynamics`
+
+<img src="images/control18.gif" width="450" alt="Vehicle Dynamics – Longitudinal/Lateral Modeling"/>
 
 Our motivation for vehicle dynamics modeling was not limited to computing braking points for AEB. To increase the reliability of sensor-based systems such as **SLAM** and **MPC**, we needed a mathematical prediction model that could verify whether sensor outputs were physically plausible and correct them when necessary.
 
 In other words, we sought to understand **“how the vehicle actually moves”** at a fundamental physical level, beyond what sensors merely report.
 
-### 4.1 Modeling Direction
+### 6.1 Modeling Direction
 
 The primary objective of our modeling was to represent vehicle speed and its braking/acceleration behavior in a physically valid manner.
 
@@ -132,7 +365,7 @@ to model realistic vehicle behavior.
 
 As a result, the speed and acceleration profiles generated in simulation could be aligned with physical intuition and sensor readings.
 
-### 4.2 Reconstructing a QCar-Specific Model
+### 6.2 Reconstructing a QCar-Specific Model
 
 After the preliminary phase, our actual test platform was Quanser’s **QCar**, which differs significantly from a conventional gasoline vehicle:
 
@@ -160,7 +393,7 @@ This model describes the physical pathway:
 
 In simulation, this reconstruction reproduced QCar’s deceleration and response characteristics realistically, forming the basis for later controller designs and parameter tuning.
 
-### 4.3 Significance of the Dynamics Model
+### 6.3 Significance of the Dynamics Model
 
 Dynamics modeling here was not just about creating a simulation block. High-level control structures such as SLAM and MPC can only be trusted if their underlying physical models are consistent and well understood.
 
@@ -173,8 +406,9 @@ In this sense, the vehicle model served as a **bridge between perception and con
 
 ---
 
-## 5. ROS2 Integration – Building a Unified System  
-**Repository:** `Product/ROS/`
+## 7. ROS2 Integration – Building a Unified System
+
+<img src="images/Ros2.gif" width="450" alt="ROS2 Integration – Multi-Node System"/>
 
 Once individual modules were functioning, our next task was to **integrate them into a single system**. The main difficulty was that each module operated on a completely different time scale:
 
@@ -230,8 +464,9 @@ As a result, the entire system finally formed a **cohesive, organically integrat
 
 ---
 
-## 6. Expanding the Goal – Toward Full Autonomous Driving  
-**Repository:** `Product/System_Overview/`
+## 8. Expanding the Goal – Toward Full Autonomous Driving
+
+<img src="images/acc.png" width="450" alt="KDAS – Autonomous Taxi Mission"/>
 
 Our initial goal of building a fully autonomous system did not end with implementing individual functions. During AEB development, we encountered a crucial realization:
 
@@ -280,8 +515,9 @@ Ultimately, ACC showed us clearly **where we stood** and **how far we needed to 
 
 ---
 
-## 7. Perception – Beginning to See the World (SCNN & YOLOv8s)  
-**Repository:** `Product/Decision/SCNN/` and `Product/Decision/YOLO/`
+## 9. Perception – Beginning to See the World (SCNN & YOLOv8s)
+
+<img src="images/SCNN11.gif" width="450" alt="SCNN – Lane Tracking in Real Time"/>
 
 Autonomous driving starts with **seeing the world**. Even if a vehicle can move, it cannot make decisions or respond to its environment without perception. Building a perception module that acts as the vehicle’s “eyes” was therefore essential.
 
@@ -327,10 +563,34 @@ Because our track did not require full four-lane highway detection—only differ
 
 Through these adjustments, SCNN eventually achieved stable tracking of continuous lanes even in curves and partially missing regions. Compared to our unstable initial models, it was as if scattered points had been smoothly connected into a solid, continuous line.
 
+On the object detection side, we needed robust detection of traffic lights and signs. We evaluated multiple object detection architectures and selected **YOLOv8s**, considering the trade-off between accuracy and runtime performance on our embedded platform.
+
+However, the pretrained YOLO model did not directly recognize our 1/10-scale track signs and signals due to differences in:
+
+- physical size,
+- design and color patterns, and
+- environmental appearance.
+
+To close this domain gap, we:
+
+- collected a custom dataset focused on track-specific objects,  
+- fine-tuned YOLOv8s on these samples, and  
+- applied data augmentation to cover different angles and lighting conditions.
+
+Additionally, each YOLO version requires specific dependencies, and aligning these with our **ROS2 + Jetson + Unreal** stack caused repeated compatibility issues. We had to choose a version that was:
+
+- accurate enough, yet  
+- light enough for real-time inference without interfering with control loops.
+
+We then defined output structures compatible with **Stateflow** so that detection results (e.g., traffic light state) could be directly consumed by the control logic.
+
+In the end, YOLOv8s became a practical module that **directly enabled decisions**, not just a standalone perception block.
+
 ---
 
-## 8. After Perception – “We See the Lane. Now How Do We Drive?”  
-**Repository:** `Product/Decision/SCNN/` and `Product/Decision/path_planning/`
+## 10. After Perception – “We See the Lane. Now How Do We Drive?”
+
+<img src="images/SCNN10.gif" width="450" alt="Lane Mask to Waypoint Conceptual Transition"/>
 
 Once we could reliably detect lanes, a more fundamental question emerged:
 
@@ -346,7 +606,7 @@ We reasoned as follows:
 
 This led us to the widely used concept of **waypoints** in autonomous driving: generating points along the lane center and connecting them into a drivable path.
 
-### Depth-Based Waypoint Generation – and Its Structural Limits
+### 10.1 Depth-Based Waypoint Generation – and Its Structural Limits
 
 To generate waypoints, we must convert pixel coordinates into real-world coordinates (x, y). A natural idea was to use a **depth camera** and map SCNN’s pixel outputs to metric coordinates.
 
@@ -362,7 +622,7 @@ In other words, the depth sensor was **unusable** for real-time coordinate conve
 
 This was more than a sensor choice issue; it meant that our entire approach did not structurally fit the QLabs environment.
 
-### A More Important Lesson – Waypoints Are an “Language,” Not Just Points
+### 10.2 A More Important Lesson – Waypoints Are an “Language,” Not Just Points
 
 Depth was not the only problem. We realized something deeper: even if depth had worked perfectly, the waypoints we were generating would have been unsuitable for control.
 
@@ -376,7 +636,7 @@ From the controller’s perspective, this is not a **trackable path** but a **co
 
 From this experience, we learned that **waypoints are not just points but a structural “language” for expressing stable, drivable paths**. Unless this language is used correctly, even the best perception or control algorithms cannot produce stable vehicle motion.
 
-### Our Conclusion from This Failure
+### 10.3 Our Conclusion from This Failure
 
 Seeing the lane is only the beginning of perception and does not automatically produce drivable behavior.
 
@@ -402,8 +662,9 @@ was not merely a technical issue. It taught us that perception outputs must be *
 
 ---
 
-## 9. Localization and Stabilization – SLAM + Kalman Filter  
-**Repository:** `Product/Localization/`
+## 11. Localization and Stabilization – SLAM + Kalman Filter
+
+<img src="images/local2.jpg" width="450" alt="SLAM Trajectory with Noise and Stabilization"/>
 
 > “If I don’t know where I am, I can’t know where to go.”
 
@@ -455,8 +716,9 @@ This approach is not as elegant as a Kalman Filter and does reduce positional re
 
 ---
 
-## 10. Path Planning – Combining RRT and DQN  
-**Repository:** `Product/Decision/path_planning/RRT/` and `Product/Decision/Reinforcement_Learning/DQN/`
+## 12. Path Planning – Combining RRT and DQN
+
+<img src="images/rrt1.png" width="450" alt="RRT Exploration and Global Path Skeleton"/>
 
 Once we could localize ourselves accurately, the next question was:
 
@@ -479,8 +741,9 @@ Through this combination, we constructed a conceptual **autonomous taxi service*
 
 ---
 
-## 11. Simulator Constraints & Early Control – Xytron Preliminary Stage  
-**Repository:** `Product/Control/Xytron/`
+## 13. Simulator Constraints & Early Control – Xytron Preliminary Stage
+
+<img src="images/SCNN1.gif" width="450" alt="Xytron Simulator – Lane Following with SCNN + PID"/>
 
 The preliminary round (Xytron) was held entirely in a simulator, but with **severely limited sensors**:
 
@@ -504,12 +767,13 @@ These lessons directly shaped our next steps in the Quanser phase. With access t
 
 ---
 
-## 12. Evolution of Control – Stanley, Pure Pursuit, and MPC  
-**Repository:** `Product/Control/` (Stanley, Pure Pursuit, MPC)
+## 14. Evolution of Control – Stanley, Pure Pursuit, and MPC
+
+<img src="images/control19.gif" width="450" alt="Control Stack – From Stanley to Pure Pursuit and MPC"/>
 
 In the Quanser final stage, we worked in an environment without strong sensor constraints. With access to full information—vehicle position, speed, and reference path—we could now test more advanced controllers. To overcome the oscillation and overshoot limitations of PID, we moved toward more robust control schemes.
 
-### 12.1 Stanley Controller
+### 14.1 Stanley Controller
 
 We first implemented a **Stanley Controller** in MATLAB/Simulink. Stanley corrects:
 
@@ -526,7 +790,7 @@ and implemented a **Modified Stanley Controller** incorporating a collaborative 
 
 This modified Stanley controller produced a stable steering response even on tracks with large curvature variations.
 
-### 12.2 Pure Pursuit Controller
+### 14.2 Pure Pursuit Controller
 
 Next, we introduced **Pure Pursuit**. Pure Pursuit computes curvature to a **lookahead point** at a fixed distance ahead, generating a steering command that geometrically tracks the desired path.
 
@@ -540,7 +804,7 @@ In the QLabs competition environment, due to depth camera malfunctions, we could
 
 We confirmed via Simulink simulations that steering and speed commands from the Pure Pursuit controller behaved as expected.
 
-### 12.3 Model Predictive Control (MPC)
+### 14.3 Model Predictive Control (MPC)
 
 In the final real-vehicle integration stage, we moved to **MPC**. MPC formulates control as a constrained optimization problem over a prediction horizon, considering:
 
@@ -565,8 +829,9 @@ By combining LSTM prediction with MPC, we obtained a controller that could accou
 
 ---
 
-## 13. Avoidance Maneuver – TDM + TG–PH Hybrid Framework  
-**Repository:** `Product/Decision/path_planning/PH_Avoidance/`
+## 15. Avoidance Maneuver – TDM + TG–PH Hybrid Framework
+
+<img src="images/rrt10.png" width="450" alt="Avoidance Paths – PH-Based Offset Around Obstacles"/>
 
 Even after implementing AEB, one question kept recurring.
 
@@ -581,7 +846,7 @@ Our system, however, did not have this second stage. We could brake hard, but no
 
 This marked the beginning of our work on **avoidance maneuvers**.
 
-### 13.1 Problem 1 – The Vehicle Cannot Decide *When* and *Where* to Avoid
+### 15.1 Problem 1 – The Vehicle Cannot Decide *When* and *Where* to Avoid
 
 The first deficiency was conceptual:
 
@@ -614,7 +879,7 @@ In other words, TDM provides a systematic framework for answering:
 
 However, deciding that avoidance is necessary does not specify **how** to avoid.
 
-### 13.2 Problem 2 – Even After Deciding to Avoid, the Vehicle Lacks a Concrete Path
+### 15.2 Problem 2 – Even After Deciding to Avoid, the Vehicle Lacks a Concrete Path
 
 After implementing TDM, the vehicle could logically conclude:
 
@@ -647,7 +912,7 @@ We therefore decided to **separate the tasks** of:
 1. deciding **how much to shift (offset)**, and  
 2. describing **how to move along that offset (curve)**.
 
-### 13.3 A Second Clue from PH Curves – Avoiding “Unnecessary Motion”
+### 15.3 A Second Clue from PH Curves – Avoiding “Unnecessary Motion”
 
 We turned to another paper:
 
@@ -682,7 +947,7 @@ This yields an avoidance path that:
 - precisely reflects the required offset, and  
 - remains free of unnecessary oscillations.
 
-### 13.4 Reconstructing Two Papers into a Single Framework
+### 15.4 Reconstructing Two Papers into a Single Framework
 
 We combined these concepts into a three-step hybrid framework:
 
@@ -704,7 +969,7 @@ By separating **decision**, **offset**, and **trajectory**, we were able to:
 - quantify how far to move sideways, and
 - generate a smooth path that minimally disrupts the original waypoint flow (PH).
 
-### 13.5 What We Ultimately Built
+### 15.5 What We Ultimately Built
 
 The crucial point is that we did not simply “chain two papers together.” We:
 
@@ -728,207 +993,41 @@ By reinterpreting and connecting these concepts, we strengthened our capability 
 
 ---
 
-## 14. Hardware System – From Power to Sensing and Actuation  
-**Repository:** `Product/Hardware/`
+## 16. Conclusion and Achievements
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/SCNN1.gif" width="300"><br>
+      <b><a href="Product/Decision/SCNN/">Lane Detection (SCNN)</a></b>
+    </td>
+    <td align="center">
+      <img src="images/yolo10.gif" width="300"><br>
+      <b><a href="Product/Decision/YOLO/">Object Detection (YOLO)</a></b>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/abdq9.gif" width="300"><br>
+      <b><a href="Product/Decision/path%20planning/">Path Planning (RRT + DQN)</a></b>
+    </td>
+    <td align="center">
+      <img src="images/control19.gif" width="300"><br>
+      <b><a href="Product/Control/">Control (Pure Pursuit)</a></b>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/ROS1.gif" width="300"><br>
+      <b><a href="Product/ROS/">ROS2 System Integration</a></b>
+    </td>
+    <td align="center">
+      <img src="images/SCNN11.gif" width="300"><br>
+      <b><a href="Product/Decision/SCNN/">Lane Tracking Visualization</a></b>
+    </td>
+  </tr>
+</table>
 
-> “What does a hardware stack suitable for autonomous driving look like?”
-
-We set out to design a hardware stack specifically for an autonomous RC vehicle, covering:
-
-- power architecture (boost converter),
-- Jetson board integration,
-- VESC-based drive unit, and
-- camera/sensor interfaces.
-
-Rather than copying existing reference designs, we chose to **redesign where necessary**.
-
-### 14.1 Power Architecture – 2-Phase Interleaved Boost Converter
-
-Initially, we considered using an off-the-shelf single boost converter to convert **2S Li-ion (7.4 V)** to the **19 V** required by the Jetson. At first glance, this looked like a solved problem with many available references.
-
-However, a deeper analysis revealed inherent limitations of boost converters:
-
-- voltage-mode control struggles to achieve high control bandwidth,  
-- the inherent **Right-Half-Plane (RHP) zero** reduces phase margin, and  
-- simply increasing \(L\) and \(C\) does not necessarily clean up output ripple.
-
-The naive option of “use larger inductors and capacitors” quickly led to:
-
-- increased volume and cost, and  
-- degraded transient response.
-
-We decided instead to redesign both the control structure and topology.
-
-#### 14.1.1 Current-Mode Control to Mitigate RHP Zero
-
-We adopted **Peak Current Mode Control (PCMC)**. By feeding back inductor current directly, the effective plant seen by the outer voltage loop approximates a **first-order system**.
-
-This yields:
-
-- reduced influence of the RHP zero on outer-loop design,  
-- more aggressive bandwidth and phase-margin targets, and  
-- the ability to suppress subharmonic oscillations via slope compensation.
-
-Rather than treating boost as a “poorly controllable topology,” we explored how far its performance could be improved with current-mode control.
-
-#### 14.1.2 Two-Phase Interleaving for Ripple and Stress Reduction
-
-Even with improved control, a single-phase boost converter still suffers from high input/output ripple and component stress. To address this, we adopted a **2-phase, 180° interleaved boost topology**:
-
-- inductor ripple currents cancel partially, reducing net input/output ripple,  
-- RMS currents are distributed across components, reducing heating and stress, and  
-- the effective switching frequency doubles, allowing smaller \(L\) and \(C\) for the same ripple.
-
-Our final power architecture thus combined **current-mode control** with **interleaving**, targeting both dynamic performance and power-quality requirements.
-
-### 14.2 Jetson Power and I/O – Not Just Copying the Reference
-
-Next, we considered how closely to follow the **NVIDIA Jetson reference board**.
-
-While functionally excellent, the reference design presented practical issues:
-
-- some power ICs and hub chips were **expensive**,  
-- others were near **EOL** or difficult to source in small quantities, and  
-- domestic procurement was challenging.
-
-Research and educational platforms require repeated revisions and long-term maintenance, so a direct 1:1 copy was not ideal.
-
-Instead, we adopted the following strategy:
-
-> “Preserve reference-level performance, but use parts that are reasonably priced and easy to source.”
-
-We:
-
-- selected power ICs with equal or better electrical specifications but better availability and cost,  
-- replaced USB hub chips with more accessible alternatives, and  
-- built a Jetson power/I/O board that meets Jetson’s voltage, current, ripple, and transient specs while remaining manufacturable and maintainable.
-
-#### 14.2.1 CSI Ports – Seeing in Four Directions
-
-The default Jetson CSI configuration groups multiple lanes into a few ports, which suffices for a single forward camera but is suboptimal for:
-
-- four-directional (front/rear/left/right) sensing, and  
-- distributed camera mounting around the vehicle.
-
-We redesigned the CSI interface so that four CSI channels are **split into independent ports**, allowing:
-
-- one camera per direction, and  
-- flexible mechanical placement of cameras while maintaining simultaneous multi-view input.
-
-### 14.3 VESC-Based Drive Unit – Building on a Proven Stack
-
-We also considered whether to design an inverter and motor controller from scratch. However, our project goals centered on the **autonomous driving system**, not inventing a new inverter.
-
-Open-source **VESC** and the **F1TENTH VESC ROS node** (e.g., `vesc_driver`) provide:
-
-- FOC-based motor control,
-- current/voltage/temperature sensing and protection, and
-- ROS-compatible topics and services.
-
-We decided to:
-
-- use the VESC reference as-is for motor control, and  
-- design an extension board to integrate motor, battery, Jetson, and development PC connections.
-
-Our extension board:
-
-- organizes power, sensing, and communication interfaces, and  
-- exposes necessary signals via headers and connectors for use by VESC Tool and ROS nodes.
-
-#### 14.3.1 Internal PCB Connections Instead of Loose External Cables
-
-An obvious way to connect VESC and Jetson is through external cables. However, in real vehicles:
-
-- vibration and shocks,
-- repeated plugging/unplugging, and
-- tight space and stressed cable routing
-
-often lead to loose connections and intermittent contact failures. In autonomous driving, such disruptions pose safety risks.
-
-To reduce these risks, we:
-
-- routed key VESC–Jetson interfaces **inside the PCB**,  
-- minimized the number of external connectors that are frequently handled, and  
-- used internal headers and fixed routing for critical signals.
-
-This design choice reduced the likelihood of communication loss due to minor cable movement.
-
-### 14.4 PCB Layout and Reliability – Treating Traces as Components
-
-Once schematics were finalized, we considered how all of this would behave on an actual PCB.
-
-We adopted the philosophy:
-
-> “Traces are components.”
-
-In other words, traces and vias have not only resistance but also parasitic inductance and capacitance, which become significant at higher switching frequencies.
-
-We therefore prioritized:
-
-- minimizing loop areas, and  
-- shortening critical trace lengths.
-
-#### 14.4.1 Loop Minimization and 45° Corners
-
-We focused on loops with large \(di/dt\) and \(dv/dt\), such as:
-
-- boost switching loops,  
-- gate-driver–MOSFET loops, and  
-- current-sensing loops.
-
-We minimized their loop areas and avoided 90° trace bends whenever possible. Sharp 90° corners can:
-
-- cause current crowding,
-- increase localized heating, and  
-- introduce impedance discontinuities at high frequencies.
-
-We used **45° bends** to make current flow smoother and reduce reflections and EM issues.
-
-#### 14.4.2 Signal and Ground in Parallel
-
-High-speed or noise-sensitive signals need well-defined **return paths** (usually GND). We routed these signals in parallel with their return paths on adjacent layers:
-
-- minimizing the loop between signal and return, and  
-- reducing EMI emission and susceptibility.
-
-We also ensured that high-speed signals (USB, CSI) did not run parallel to or intersect power traces over long distances, reducing parasitic coupling.
-
-#### 14.4.3 Port Protection, Ground Strategy, and Thermal Management
-
-We added:
-
-- TVS/ESD arrays near external ports (power inputs, USB, sensor connectors) to clamp ESD and surges,  
-- separated power and signal grounds, tying them together at controlled points, and  
-- wide copper areas and thermal paths for high-current sections.
-
-These layout rules were collected as a personal checklist for future revisions and re-spins, ensuring consistent quality across iterations.
-
-### 14.5 Summary – Rewriting, Not Copying, the Hardware Stack
-
-At first glance, our hardware consists of:
-
-- a 2-phase interleaved boost converter,  
-- a Jetson power/I/O board, and  
-- a VESC-based drive extension board.
-
-Behind these PCBs lie many design decisions:
-
-- handling boost RHP zeros and control-performance trade-offs,  
-- adopting current-mode control and interleaving,  
-- addressing Jetson reference BOM reality and component substitution,  
-- reconstructing CSI ports for four-directional sensing,  
-- leveraging F1TENTH’s VESC ROS node and VESC reference design,  
-- internalizing VESC–Jetson connections to avoid cable failures, and  
-- designing PCB layouts with parasitic L/C and thermal behavior in mind.
-
-This hardware stack is neither a simple copy of Jetson/VESC references nor a one-off experiment. It is a system where proven stacks (VESC, F1TENTH ROS, Jetson references) are used wherever appropriate, and redesigned where they do not fit our system.
-
-Through this process, we learned not only to make a board **work**, but also to make it **communicate design intent and engineering trade-offs**.
-
----
-
-## 15. Conclusion and Achievements  
-**Repository:** `Product/` (project-wide summary)
 
 Over two semesters (one year), we designed and implemented the entire pipeline from **theory → simulation → real vehicle**. Starting with Unreal-based simulation and ending with ROS2-based real QCar2 driving, we experienced the integration of all stages of autonomous driving into a single system.
 
@@ -985,119 +1084,6 @@ Every step forward started from the question:
 
 > “We built a car that can see lanes, make decisions, and move.  
 > But more importantly, through that process, we became engineers who can **see, decide, and act** on our own.”
-
----
-
-## 16. Development Story and Repository Overview (From Initial README Draft)
-
-This section summarizes the final system modules and links them to the directory structure under `Product/`. It complements the detailed narrative above.
-
-### 16.1 Overall Results (GIF Summary – Text-Only)  
-**Repository:** `Product/`
-
-The final system integrates perception, planning, control, and ROS2 infrastructure. Each main module runs in real time on QCar2.
-
-Module entries:
-
-- Lane Detection (SCNN): `Product/Decision/SCNN/`  
-- Object Detection (YOLO): `Product/Decision/YOLO/`  
-- Path Planning (RRT + DQN): `Product/Decision/path_planning/`  
-- Control (Pure Pursuit): `Product/Control/`  
-- ROS2 System Integration: `Product/ROS/`
-
-### 16.2 Step 1 – Modeling and Simulation  
-**Repository:** `Product/Dynamics/` and `Product/Control/MPC/`
-
-We began by modeling vehicle dynamics in MATLAB/Simulink:
-
-- **AEB Dynamics**: `Product/Dynamics/AEB_Dynamics/`  
-- **QCar Dynamics**: `Product/Dynamics/QCAR_Dynamics/`
-
-These models allowed us to replicate longitudinal and lateral vehicle motion, design braking strategies, and explore control methods.
-
-Manual PID tuning proved unstable under varying loads. This led to the development of:
-
-- an **automatic tuning pipeline**, and  
-- an **MPC controller** at `Product/Control/MPC/` for TTC-based braking.
-
-**Result:** stable braking under dynamic conditions using MPC.
-
-### 16.3 Step 2 – Real-Vehicle Implementation  
-**Repository:** `Product/Control/Steering_Control_&_Braking/`
-
-We transitioned from simulation to real hardware control using **STM32** and **VESC**.
-
-The **Pure Pursuit controller** in `Product/Control/Steering_Control_&_Braking/` was validated as our final steering algorithm due to its robust low-speed performance and smooth path tracking.
-
-Initial tests with Stanley revealed oscillations and understeering issues at higher speeds, whereas Pure Pursuit aligned steering with lookahead geometry and provided stable behavior.
-
-**Result:** smooth and stable real-vehicle steering control.
-
-### 16.4 Step 3 – Perception (Sensor Integration)  
-**Repository:** `Product/Sensors/`
-
-To perceive the environment, we integrated:
-
-- **RPLiDAR A2M12** for 360° mapping,  
-- **RealSense D435i** for RGB-D semantics, and  
-- encoders for odometry.
-
-The sensor setup is described in `Product/Sensors/`, where we detail ROS2 topics and fusion rationale.
-
-**Problem:** reliability of single sensors degraded under reflections and shadows.  
-**Solution:** multi-sensor fusion improved robustness across varying conditions.
-
-### 16.5 Step 4 – Localization  
-**Repository:** `Product/Localization/`
-
-Accurate localization was essential for stable planning. We evaluated:
-
-- **AMCL**, and  
-- **Cartographer**
-
-under `Product/Localization/`.
-
-AMCL suffered from drift and map dependency, while Cartographer offered:
-
-- real-time loop closure,  
-- map correction, and  
-- robust LiDAR-based scan matching.
-
-**Result:** Cartographer was selected as the default SLAM backend, achieving pose errors on the order of centimeters.
-
-### 16.6 Step 5 – Deep Learning-Based Perception  
-**Repository:**  
-- SCNN: `Product/Decision/SCNN/`  
-- YOLOv8s: `Product/Decision/YOLO/`  
-- LSTM: `Product/Decision/Deep_Learning/CAN_DATA(LSTM)/`
-
-We integrated three deep models:
-
-- **SCNN** for lane detection and centerline generation,  
-- **YOLOv8s** for real-time traffic light, sign, and obstacle detection, and  
-- **LSTM** for future-state prediction (e.g., lateral deviation and curvature).
-
-This pipeline enabled proactive control decisions and operated at real-time frame rates.
-
-### 16.7 Step 6 – Path Planning and Decision Making  
-**Repository:** `Product/Decision/path_planning/`
-
-Our decision layer combined:
-
-- **RRT**: `Product/Decision/path_planning/RRT/` for safe corridor generation between waypoints,  
-- **DQN**: `Product/Decision/Reinforcement_Learning/DQN/` for learning waypoint ordering to minimize travel cost, and  
-- **PH Curve / Trajectory Generation**: `Product/Decision/path_planning/` for smoothing jagged RRT paths into continuous curves.
-
-**Result:** PH-based smoothing reduced lateral jerk and produced collision-free avoidance paths suitable for real-time control.
-
-### 16.8 Step 7 – ROS2 Integration  
-**Repository:** `Product/ROS/`
-
-All components—SLAM, perception, planning, and control—were unified via **ROS2**. Nodes communicate through a structured topic tree with carefully tuned QoS settings.
-
-The launch configuration in `Product/ROS/` orchestrates the full system, enabling end-to-end autonomous driving on QCar2 in real time.
-
-**Outcome:** robust, real-time autonomous driving achieved on QCar2 with the full stack under ROS2.
 
 ---
 
