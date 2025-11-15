@@ -8,7 +8,7 @@ The **Kookmin Autonomous Driving System (KMU-KDAS)** is a full-stack autonomous 
 
 ---
 
-## 1. Overall Results (Module GIF Summary)
+## 1. Overall Results 
 
 Below are the final results showing each module operating in real time. Click on each caption to open the corresponding folder under `Product/`.
 
@@ -51,7 +51,7 @@ Below are the final results showing each module operating in real time. Click on
 
 This section summarizes the final system modules, representative figures, and links them to the directory structure under `Product/`. It complements the detailed narrative in the later sections.
 
-### 2.1 Overall Results (GIF Summary – Text-Only)
+### 2.1 Overall Results 
 
 **Repository:** `Product/`
 
@@ -110,7 +110,7 @@ Initial tests with Stanley revealed oscillations and understeering issues at hig
 
 ### 2.4 Step 3 – Perception (Sensor Integration)
 
-<img src="images/SCNN10.gif" width="450" alt="Perception – Sensor Integration Overview"/>
+<img src="images/SCNN10.gif" width="450" alt="Perception"/>
 
 **Repository:**  
 - `Product/Sensors/`
