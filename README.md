@@ -834,11 +834,11 @@ By combining LSTM prediction with MPC, we obtained a controller that could accou
 <table>
   <tr>
     <td align="center" valign="top">
-      <img src="../../../images/avo6.gif" alt="PH trajectory" width="400"/><br/>
+      <img src="images/avo6.gif" alt="PH trajectory" width="400"/><br/>
       <b>Large Obstacle</b>
     </td>
     <td align="center" valign="top">
-      <img src="../../../images/avo7.gif" alt="PH trajectory" width="400"/><br/>
+      <img src="images/avo7.gif" alt="PH trajectory" width="400"/><br/>
       <b>Small Obstacle</b>
     </td>
   </tr>
@@ -847,11 +847,11 @@ By combining LSTM prediction with MPC, we obtained a controller that could accou
 <table>
   <tr>
     <td align="center" valign="top">
-      <img src="../../../images/avo8.gif" alt="PH trajectory" width="400"/><br/>
+      <img src="images/avo8.gif" alt="PH trajectory" width="400"/><br/>
       <b>Right direction</b>
     </td>
     <td align="center" valign="top">
-      <img src="../../../images/avo9.gif" alt="PH trajectory" width="400"/><br/>
+      <img src="images/avo9.gif" alt="PH trajectory" width="400"/><br/>
       <b>Left direction</b>
     </td>
   </tr>
