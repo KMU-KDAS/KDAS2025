@@ -25,22 +25,22 @@ Below are the final results showing each module operating in real time. Click on
   </tr>
   <tr>
     <td align="center">
-      <img src="images/abdq9.gif" width="300"><br>
+      <img src="images/rrt1.png" width="300"><br>
       <b><a href="Product/Decision/path%20planning/">Path Planning (RRT + DQN)</a></b>
-    </td>
-    <td align="center">
-      <img src="images/control19.gif" width="300"><br>
-      <b><a href="Product/Control/">Control (Pure Pursuit)</a></b>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="images/ROS1.gif" width="300"><br>
-      <b><a href="Product/ROS/">ROS2 System Integration</a></b>
     </td>
     <td align="center">
       <img src="images/SCNN11.gif" width="300"><br>
       <b><a href="Product/Decision/SCNN/">Lane Tracking Visualization</a></b>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/control19.gif" width="300"><br>
+      <b><a href="Product/Control/Steering Control & Breaking Control/">Control QCar</a></b>
+    </td>
+    <td align="center">
+      <img src="images/control18.gif" width="300"><br>
+      <b><a href="Product/Decision/SCNN/">Control simulation</a></b>
     </td>
   </tr>
 </table>
@@ -719,7 +719,7 @@ This approach is not as elegant as a Kalman Filter and does reduce positional re
 ## 12. Path Planning – Combining RRT and DQN
 
 <img src="images/rrt1.png" width="450" alt="RRT Exploration and Global Path Skeleton"/>
-
+<img src="images/rrt10.png" width="450" alt="Avoidance Paths – PH-Based Offset Around Obstacles"/>
 Once we could localize ourselves accurately, the next question was:
 
 > “How do we generate a path?”
@@ -831,7 +831,31 @@ By combining LSTM prediction with MPC, we obtained a controller that could accou
 
 ## 15. Avoidance Maneuver – TDM + TG–PH Hybrid Framework
 
-<img src="images/rrt10.png" width="450" alt="Avoidance Paths – PH-Based Offset Around Obstacles"/>
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <img src="../../../images/avo6.gif" alt="PH trajectory" width="400"/><br/>
+      <b>Large Obstacle</b>
+    </td>
+    <td align="center" valign="top">
+      <img src="../../../images/avo7.gif" alt="PH trajectory" width="400"/><br/>
+      <b>Small Obstacle</b>
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <img src="../../../images/avo8.gif" alt="PH trajectory" width="400"/><br/>
+      <b>Right direction</b>
+    </td>
+    <td align="center" valign="top">
+      <img src="../../../images/avo9.gif" alt="PH trajectory" width="400"/><br/>
+      <b>Left direction</b>
+    </td>
+  </tr>
+</table>
 
 Even after implementing AEB, one question kept recurring.
 
