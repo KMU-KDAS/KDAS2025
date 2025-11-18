@@ -8,7 +8,7 @@ The **Kookmin Autonomous Driving System (KMU-KDAS)** is a full-stack autonomous 
 
 ---
 
-## 1. Overall Results 
+## 0. Overall Results 
 
 Below are the final results showing each module operating in real time. Click on each caption to open the corresponding folder under `Product/`.
 
@@ -47,11 +47,11 @@ Below are the final results showing each module operating in real time. Click on
 
 ---
 
-## 2. Development Story and Repository Overview
+## 1. Development Story and Repository Overview
 
 This section summarizes the final system modules, representative figures, and links them to the directory structure under `Product/`. It complements the detailed narrative in the later sections.
 
-### 2.1 Overall Results 
+### 1.1 Overall Results 
 
 **Repository:** `Product/`
 
@@ -67,7 +67,7 @@ The final system integrates perception, planning, control, and ROS2 infrastructu
 
 ---
 
-### 2.2 Step 1 – Modeling and Simulation
+### 1.2 Step 1 – Modeling and Simulation
 
 <img src="images/control18.gif" width="450" alt="Modeling & Simulation (AEB/QCar Dynamics)"/>
 
@@ -91,7 +91,7 @@ Manual PID tuning proved unstable under varying loads. This led to the developme
 
 ---
 
-### 2.3 Step 2 – Real-Vehicle Implementation
+### 1.3 Step 2 – Real-Vehicle Implementation
 
 <img src="images/control19.gif" width="450" alt="Real Vehicle Control (Pure Pursuit on QCar2)"/>
 
@@ -108,7 +108,7 @@ Initial tests with Stanley revealed oscillations and understeering issues at hig
 
 ---
 
-### 2.4 Step 3 – Perception (Sensor Integration)
+### 1.4 Step 3 – Perception (Sensor Integration)
 
 <img src="images/SCNN10.gif" width="450" alt="Perception"/>
 
@@ -128,7 +128,7 @@ The sensor setup is described in `Product/Sensors/`, where we detail ROS2 topics
 
 ---
 
-### 2.5 Step 4 – Localization
+### 1.5 Step 4 – Localization
 
 <img src="images/local2.jpg" width="450" alt="Localization – Cartographer Map and Trajectory"/>
 
@@ -152,7 +152,7 @@ AMCL suffered from drift and map dependency, while Cartographer offered:
 
 ---
 
-### 2.6 Step 5 – Deep Learning-Based Perception (SCNN / YOLO / LSTM)
+### 1.6 Step 5 – Deep Learning-Based Perception (SCNN / YOLO / LSTM)
 
 <table>
   <tr>
@@ -193,7 +193,7 @@ This pipeline enabled proactive control decisions and operated at real-time fram
 
 ---
 
-### 2.7 Step 6 – Path Planning and Decision Making
+### 1.7 Step 6 – Path Planning and Decision Making
 
 <table>
   <tr>
@@ -221,7 +221,7 @@ Our decision layer combined:
 
 ---
 
-### 2.8 Step 7 – ROS2 Integration
+### 1.8 Step 7 – ROS2 Integration
 
 <img src="images/Ros1.gif" width="450" alt="ROS2 Integration – Full Stack on QCar2"/>
 
@@ -236,7 +236,7 @@ The launch configuration in `Product/ROS/` orchestrates the full system, enablin
 
 ---
 
-## 3. Project Overview and Motivation
+## 2. Project Overview and Motivation
 
 
 > “Can we implement the things we learned in class as industry-level technology?”
@@ -262,6 +262,245 @@ Some technologies we encountered were difficult to handle directly at the underg
 Whenever issues emerged during implementation, we analyzed the cause and iterated through a cycle of testing and modification to find solutions. Through this process, we gradually evolved from “people who understand theory” into “engineers who can implement it.”
 
 The core of this project was the belief that we could build real technology with what we had learned—and the determination to prove that belief through a complete autonomous driving system.
+
+
+---
+## 3. Hardware System – “어떻게 현실 세계로 자율주행 시스템을 가져올까?”
+
+시뮬레이션 안에서는 인지·제어 알고리즘만 있어도 자율주행이 성립한다.  
+하지만 우리가 만든 스택을 실제 차량 위에서 돌리려는 순간, 전혀 다른 질문과 마주하게 되었다.
+
+> “이 자율주행 소프트웨어를 현실에서 **믿고 돌릴 수 있는 차량용 하드웨어**는 어떤 모습이어야 할까?”
+
+단순히 “차를 움직이는 보드 한 장”이 아니라,
+
+- 부스트 컨버터,
+- Jetson 전원·I/O,
+- VESC 구동부,
+- 센서 인터페이스,
+- 그리고 이를 지탱하는 PCB 레이아웃까지
+
+알고리즘이 기대하는 동작을 실제 회로가 **안정적으로 버텨 줄 수 있는 구조**를 만들어야 했다.
+
+---
+
+### 3.1 전원부 – “7.4 V를 19 V로만 올리면 되는 걸까?”
+
+처음 질문은 아주 단순했다.
+
+> “2S Li-ion(7.4 V)을 19 V로 올리기만 하면 되니, 시중 부스트 레퍼런스를 그대로 쓰면 되지 않을까?”
+
+그러나 부스트 동작을 제대로 들여다보는 순간, 질문은 바로 바뀌었다.
+
+- 전압 모드 제어 기준으로는 **RHP Zero** 때문에 대역폭을 크게 가져가기 어렵고
+- L·C를 키워도 출력 리플은 원하는 만큼 줄지 않으며
+- 대신 부피·비용·과도 응답이 함께 악화되는 구조
+
+즉, 단순히 “더 큰 부품을 쓰는 것”만으로는 자율주행 시스템이 요구하는 **전원 품질과 응답성**을 확보하기 어렵다는 결론에 도달했다.
+
+그래서 스스로에게 다시 물었다.
+
+> “부품을 키우는 방식이 아니라, **제어 구조와 토폴로지**를 바꾸면 어떤 선택지가 생길까?”
+
+여기서 내린 첫 번째 답이 바로 **전류 모드 제어(PCMC, Peak Current Mode Control)**였다.
+
+- 인덕터 전류를 피드백에 포함시켜 플랜트를 사실상 1차 지연에 가깝게 만들고
+- 슬로프 보상으로 서브하모닉 진동을 제어하면서
+
+부스트 컨버터를  
+“제어 성능이 나쁜 토폴로지”가 아니라  
+“전류 모드 제어를 전제로 하면 충분히 제어 가능한 대상”으로 다시 보게 되었다.
+
+하지만 곧 다음 질문이 이어졌다.
+
+> “전류 제어를 써도, 이 모든 리플과 소자 스트레스를 **한 위상에 다 몰아줘야 할까?**”
+
+여기서 선택한 구조가 **2상 180° 인터리브드 부스트**였다.
+
+- 두 위상의 인덕터 리플 전류가 서로 상쇄되면서 **입·출력 리플 전류가 줄어들고**
+- 인덕터·커패시터가 전류를 나눠 받으면서 **발열과 소자 스트레스가 분산**되며
+- 체감 스위칭 주파수가 두 배가 되어, **같은 리플 목표를 더 작은 L·C로 달성**할 수 있었다.
+
+이 과정을 거치며 전원부에 대한 정의도 바뀌었다.
+
+> “이 승압부는 단순한 ‘7.4 V → 19 V 변환 회로’가 아니라,  
+> **RHP Zero·리플·소자 스트레스**를  
+> 제어 구조(PCMC)와 토폴로지(2상 인터리빙)로 풀어낸 **전원 아키텍처**다.”
+
+---
+
+### 3.2 Jetson과 센서 – “레퍼런스를 어디까지 그대로 믿어야 할까?”
+
+Jetson을 올리려 할 때 가장 먼저 떠올랐던 생각은 이렇다.
+
+> “NVIDIA 레퍼런스 보드를 1:1로 카피하면 가장 안전하지 않을까?”
+
+전원 시퀀스, USB, CSI 포트 구성까지 이미 잘 정리된 회로가 있으니,  
+겉으로 보기에는 그대로 따르는 것이 **리스크가 없어 보였다**.
+
+하지만 실제 부품 리스트를 펼쳐 놓고 보니 문제가 드러났다.
+
+- 일부 전원 IC·허브 칩은 **단가가 과도하게 높고**
+- **EOL·재고 부족**으로 조달이 불안정하며
+- 연구·교육용 플랫폼처럼 여러 번 리비전·재제작이 필요한 보드에는 적합하지 않았다.
+
+그래서 질문을 바꿔야 했다.
+
+> “성능은 레퍼런스를 따라가되,  
+> **지속적으로 조달 가능한 보드**로 만들려면 어떻게 해야 할까?”
+
+여기서 내린 결론은 다음과 같다.
+
+1. **전기적 스펙(전압·전류·리플·응답)** 은 레퍼런스를 기준으로 유지한다.  
+2. 그 스펙을 만족하면서도 **국내에서 안정적으로 구할 수 있는 소자**로 회로를 재구성한다.
+
+실제로는,
+
+- 전원 IC는 동일급 스펙을 갖는 **대체 부품**으로 교체했고
+- USB 허브는 데이터시트·레퍼런스가 충분하고 **유통이 안정된 칩**으로 바꾸어
+- Jetson–허브–센서로 이어지는 경로를 **현실적인 부품 조합으로 다시 설계**했다.
+
+정리하면,
+
+> “Jetson 전원·I/O 보드는 레퍼런스의 전기적 요구사항은 지키되,  
+> 실제로 **사서 쓰고, 고쳐 쓰고, 다시 만들 수 있는** 부품들로 재구성한 보드다.”
+
+---
+
+### 3.3 모터 구동 – “어떻게 해야 믿을 수 있는 출력을 만들 수 있을까?”
+
+모터 쪽에서는 이런 질문이 출발점이었다.
+
+> “자율주행 차량의 모터 제어를,  
+> 어떻게 하면 **안정적이고 신뢰성 있게** 만들 수 있을까?”
+
+이 시스템에서 모터는 단순히 바퀴를 돌리는 부품이 아니다.  
+인지·제어 스택이 계산해 낸 값을 **현실 세계의 움직임으로 바꾸는 최종 출력 단계**다.  
+여기서 제어가 흔들리거나, 보호 로직이 약하거나, Jetson–VESC 통신이 끊기면 전체 시스템이 무너진다.
+
+그래서 먼저 이렇게 정리했다.
+
+> “모터 제어 코어를 새로 만드는 대신,  
+> **검증된 코어 위에 우리 하드웨어를 입히자.**”
+
+그 답으로 선택한 것이:
+
+- 오픈소스 **VESC 레퍼런스**,  
+- 그리고 **F1TENTH VESC ROS node(vesc_driver 등)**였다.
+
+즉,
+
+- FOC 제어, 전류·전압·온도 센싱, 보호 로직은 이미 검증된 **VESC**에 맡기고
+- Jetson과의 상위 제어 연결은 **ROS 노드**를 통해 토픽/서비스 기반으로 구성했다.
+
+그 다음에 나온 질문은 **연결 방식**이었다.
+
+> “소프트웨어는 검증됐는데,  
+> 이걸 물리적으로 어떻게 연결해야 **‘안 끊기는 제어 경로’**가 될까?”
+
+처음 떠올린 것은,  
+외부 케이블과 노출 커넥터로 VESC와 Jetson을 이어 붙이는 방식이었다. 그러나 실제 차량 환경에서는
+
+- 진동, 충격,
+- 반복 탈착,
+- 좁은 공간에서의 무리한 배선
+
+때문에 케이블이 **살짝만 빠져도 통신이 끊길 수** 있다.  
+이건 곧 **예측 불가능한 모터 거동과 안전 이슈**로 이어진다.
+
+그래서 연결에 대한 답도 바뀌었다.
+
+> “VESC–Jetson 링크를 가능한 한 **보드 내부로 끌고 들어오자.**”
+
+최종 설계에서는,
+
+- 핵심 인터페이스를 **PCB 내부 패턴**으로 연결하고
+- 외부에서 자주 만지는 케이블 구간은 **최소화**했다.
+
+그 결과, VESC와 Jetson은
+
+- 소프트웨어적으로는 **VESC–ROS 스택** 위에서
+- 하드웨어적으로는 **내부 결선 구조** 위에서
+
+쉽게 끊기지 않는 **하나의 제어 경로**를 갖게 되었다.
+
+요약하면,
+
+> “VESC 기반 구동부는 검증된 모터 제어 코어 위에,  
+> 우리 차량에 맞게 설계한 전력·센싱·통신·결선 구조를 얹어  
+> 모터 제어의 안정성과 신뢰성을 끌어올린 하드웨어 스택이다.”
+
+---
+
+### 3.4 PCB 레이아웃 – “선 하나까지 어디까지 신경 써야 할까?”
+
+회로 구성이 끝나갈 때쯤, 또 하나의 질문이 생겼다.
+
+> “이 회로가 실제 PCB 위에서 **얼마나 안정적으로 동작**하게 만들 수 있을까?”
+
+스위칭 주파수가 올라갈수록 **트레이스와 비아는 단순한 도선이 아니다.**  
+저항뿐 아니라 **기생 인덕턴스(L)**, **기생 커패시턴스(C)** 를 가진 하나의 부품이 된다.
+
+그래서 레이아웃에서도 이런 질문을 던질 수밖에 없었다.
+
+> “루프를 어떻게 닫고, 선을 어떻게 꺾어야,  
+> 나중에 우리가 **믿고 쓸 수 있는 보드**가 될까?”
+
+여기서 잡은 핵심 원칙은 두 가지였다.
+
+1. **“루프 면적을 줄이되, 기생 커패시턴스를 과하게 키우지 않는다.”**  
+2. **“신호는 항상 리턴과 함께 그린다.”**
+
+구체적으로는 다음과 같은 기준을 적용했다.
+
+- 부스트 스위칭 루프, 게이트 드라이버–MOSFET 루프, 전류 센싱 루프는  
+  가능한 한 **작은 면적 안에서 닫히도록 배치**해 기생 L을 줄였다.
+- 동시에, 지나치게 압축해서 인접 트레이스·플레인과의 기생 C가 과도하게 커지지 않도록  
+  **간격과 루프 크기를 조정하며 중간 지점을 탐색**했다.
+- 트레이스 코너는 **90° 대신 45°**로 꺾어,  
+  고주파에서의 임피던스 변화, 국부 발열, 파형 왜곡을 줄였다.
+
+또한,
+
+- 고속·민감 신호는 바로 아래/옆의 **GND 리턴 경로와 나란히 배치**해  
+  신호–리턴 루프 면적을 최소화하고, 외부로 나가는 EMI와 외부에서 들어오는 노이즈를 줄였다.
+- USB, CSI 같은 라인이 전력 라인과 **불필요하게 평행하거나 교차하지 않도록** 배치해  
+  기생 커플링을 억제했다.
+- 외부 포트 근처에는 **TVS/ESD 어레이를 최대한 근접** 배치해  
+  정전기·서지를 포트 단에서 처리했고,
+- 파워 GND와 신호 GND는 보드 전체를 섞지 않고  
+  **필요한 지점에서만 한 점 접합(single-point connection)** 을 만들었다.
+
+정리하면,
+
+> “이 보드는 회로도만 깔끔한 보드가 아니라,  
+> 트레이스 하나, 루프 하나까지 **기생 L/C와 신뢰성을 의식해서 배치한 PCB**다.”
+
+---
+
+### 3.5 정리 – “단순한 레퍼런스 조합 하드웨어”가 아니라 “질문에 답한 하드웨어”
+
+겉으로 보면 이 프로젝트의 하드웨어는
+
+- 2상 인터리브드 부스트 컨버터,
+- Jetson 전원·I/O 보드,
+- VESC 기반 구동부
+
+라는 비교적 단순한 구조의 PCB들로 보인다.
+
+하지만 실제로는 그 뒤에 다음과 같은 질문과 답이 겹겹이 쌓여 있다.
+
+- “부스트 컨버터로 이 시스템을 **정말 안정적으로** 돌릴 수 있을까?”
+- “Jetson 레퍼런스를 **어디까지 그대로 따라가는 게** 맞을까?”
+- “모터 제어를 어떻게 해야 **끊기지 않고 안전하게** 만들 수 있을까?”
+- “트레이스 하나까지 어떻게 그려야 **장기간 믿고 쓸 수 있을까?**”
+
+그래서 이번 결과물을 한 문장으로 요약하면 이렇게 말할 수 있다.
+
+> “이 보드는 VESC·Jetson 레퍼런스 같은 검증된 기반 위에,  
+> 우리가 직접 던진 질문들과 그에 대한 답을  
+> 회로와 레이아웃으로 구현한  
+> **‘질문에 반응해서 진화한 자율주행 하드웨어 스택’**이다.”
 
 ---
 
@@ -675,7 +914,6 @@ In the end, YOLOv8s became a practical module that **directly enabled decisions*
 
 ## 10. Simulator Constraints & Early Control – Xytron Preliminary Stage
 
-<img src="images/SCNN1.gif" width="450" alt="Xytron Simulator – Lane Following with SCNN + PID"/>
 
 The preliminary round (Xytron) was held entirely in a simulator, but with **severely limited sensors**:
 
@@ -701,7 +939,6 @@ These lessons directly shaped our next steps in the Quanser phase. With access t
 
 ## 11. After Perception – “We See the Lane. Now How Do We Drive?”
 
-<img src="images/SCNN10.gif" width="450" alt="Lane Mask to Waypoint Conceptual Transition"/>
 
 Once we could reliably detect lanes, a more fundamental question emerged:
 
