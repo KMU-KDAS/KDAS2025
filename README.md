@@ -1005,118 +1005,116 @@ The question,
 was not merely a technical issue. It taught us that perception outputs must be **translated into the “language of paths”**—a comprehensive reasoning process in its own right.
 
 ---
-## 12. 궤적 추종 제어의 시작 – Stanley Controller
+## 12. Beginning Trajectory Tracking – Stanley Controller
 
-Xytron 대회에서 차량을 처음 실제로 움직여 보았을 때,  
-우리는 **PID 제어기의 한계를 뼈저리게 체감**했다.
+When we first moved the vehicle during the Xytron competition,  
+we immediately **felt the limitations of PID control**.
 
-- 직선에서는 어느 정도 정상적으로 주행했지만  
-- 코너에 들어서는 순간 **진동**, **오버슈트**, **언더슈트**가 반복되었고  
-- 차량은 안정적인 궤적을 유지하지 못했다.
+- It performed reasonably well on straight segments,  
+- but the moment we entered a corner, **oscillation** and **overshoot** appeared repeatedly,  
+- and the vehicle failed to maintain a stable trajectory.
 
-그때 우리는 분명히 알 수 있었다.
+That was the moment we realized:
 
-> “단순 피드백만으로는 자율주행을 만들 수 없다.”
+> “Autonomous driving cannot be achieved with simple feedback alone.”
 
-PID를 넘어선 보다 구조적인 제어 방식이 필요했다.  
-그때 가장 먼저 떠올린 것이 바로 **Stanley 제어기**였다.
-
----
-
-### 12.1 Stanley를 위한 첫 설계: SCNN + Depth 기반 3D Waypoint
-
-<img src="images/control5.png" width="450" alt="SCNN + Depth 기반 Stanley 구조"/>
-
-Stanley를 우선 고려한 이유는 명확했다.
-
-- Stanley는 **2005 DARPA Grand Challenge 우승 차량에 실제 사용된 제어기**이며  
-- 센서 기반 waypoint 추종, 고속 안정성 측면에서 이미 검증되었고  
-- 우리가 만들고자 하는 **센서 기반 실시간 자율주행 구조**와 매우 잘 맞았다.
-
-특히 Stanley는 다음 두 값을 기반으로 조향을 보정한다.
-
-- 횡오차 (**cross-track error**)  
-- 헤딩 오차 (**heading error**)  
-
-PID보다 훨씬 안정적이고 **기하학적으로 정당한 조향 응답**을 만든다.
-
-하지만 Stanley가 제대로 작동하기 위해 필요한 조건이 있었다:
-
-> **정확한 3D 차선 경로(waypoint)가 있어야 한다는 것.**
-
-이를 위해 우리는 아래와 같은 구조를 설계했다.
-
-1. **SCNN으로 차선 마스크 검출**  
-2. **Depth 카메라로 각 픽셀의 실제 거리 추정**  
-3. **두 정보를 결합해 3D waypoint 생성**  
-4. **생성된 waypoint를 Stanley 제어기의 입력으로 사용**
-
-이 파이프라인이 제대로 작동한다면,  
-Stanley는 이론적으로도, 실전에서도 가장 강력한 조향 제어기가 될 수 있었다.
+After confirming PID’s limitations, the first structured steering controller we considered was the **Stanley Controller**.
 
 ---
 
-### 12.2 예상 밖의 장애물 – Depth 카메라 버그로 인한 “전면 중단”
+### 12.1 Initial Stanley Design – SCNN + Depth-Based 3D Waypoints
 
-그러나 실험 과정에서 **결정적인 문제**가 발생했다.
+We chose Stanley for clear reasons:
 
-> QLabs Depth 카메라가 시스템 버그로 인해  
-> 올바른 depth 값을 제공하지 않았던 것이다.
+- It was the steering method used by Stanford’s winning vehicle in the **2005 DARPA Grand Challenge**,  
+- It is well-established for sensor-based waypoint tracking and high-speed stability,  
+- And its design philosophy matched the **real-time, perception-driven** autonomy stack we aimed to implement.
 
-실제 출력된 값은:
+Stanley computes steering using:
 
-- 0  
-- 무한대(∞)  
-- 랜덤 노이즈  
-- 프레임마다 불규칙한 값 변화  
+- **Cross-track error**  
+- **Heading error**  
+- (in extended forms) **Path curvature**
 
-즉, **실제 거리 정보를 완전히 잃은 상태**였다.
+However, all these quantities assume the existence of **real-world 3D waypoints** in the vehicle’s coordinate frame.
 
-Depth 카메라 없이는:
+Pixel coordinates from RGB images are insufficient:
 
-- SCNN의 픽셀 좌표를  
-- 실제 월드 좌표(3D waypoint)로  
-- 변환할 수 없다.
+- You cannot define true lateral distance  
+- You cannot compute curvature  
+- You cannot calculate world-frame Stanley control terms
 
-그 말은 곧:
+Therefore, we concluded that to use Stanley **properly**, we first needed **3D waypoints**.
 
-> 우리가 준비한 **Stanley 기반 제어 구조는 초기 단계에서 완전히 중단**될 수밖에 없었다는 의미였다.
+To achieve this, we designed the following pipeline:
 
----
+1. **Detect lane masks using SCNN**  
+2. **Estimate real-world distance using the Depth camera**  
+3. **Fuse lane pixels + depth to generate 3D waypoints**  
+4. **Feed these 3D waypoints into the Stanley controller**
 
-### 12.3 다음 단계: Waypoint 생성을 위해 Localization에 집중하다
-
-Stanley를 사용하려면 3D waypoint가 필요하고,  
-3D waypoint를 만들려면 Depth가 반드시 필요했다.  
-하지만 Depth가 **구조적으로 불가능한 환경**이었다.
-
-따라서 우리는 전략을 재정비했다.
-
-> **Depth 기반 waypoint → 불가능**  
-> **Localization 기반 waypoint → 가능**
-
-즉,  
-Depth로부터 좌표를 얻는 대신,
-
-- SLAM을 통해 차량의 위치를 안정적으로 추정하고  
-- 트랙 전체의 전역 waypoint를 기준으로  
-- 해당 위치에서 가장 가까운 waypoint를 추종하는 방식으로 전환했다.
-
-이 결정은 이후 Pure Pursuit 선택과 SLAM–Waypoint 기반 구조 설계의  
-핵심 기반이 되었다.
+If this pipeline worked, Stanley would have been the strongest controller both theoretically and practically.
 
 ---
 
-### 12.4 요약
+### 12.2 Unexpected Obstacle – Depth Camera Bug Halts Everything
 
-- PID는 곡률 변화에 취약하여 실전에서 불안정  
-- Stanley는 이론적으로 가장 강력한 선택  
-- SCNN + Depth로 Stanley에 필요한 3D waypoint를 만들 계획이었음  
-- 하지만 **QLabs Depth 버그 → 3D waypoint 생성 불가 → Stanley 중단**  
-- 이후 시스템 구조를 **SLAM–waypoint 기반**으로 재구성하게 됨
+However, a **critical issue** emerged during experiments:
 
-Stanley는 실패했지만,  
-이 실패는 이후 가장 현실적인 제어 구조를 찾는 중요한 출발점이 되었다.
+> The QLabs depth camera suffered from a system-level bug  
+> and failed to produce valid depth values.
+
+The outputs were:
+
+- zeros,  
+- infinite values,  
+- random noise,  
+- frame-to-frame instability.
+
+Without valid depth, we could not:
+
+- convert SCNN pixel coordinates into 3D world coordinates,  
+- compute cross-track error or curvature in real units,  
+- generate any usable Stanley input.
+
+As a result:
+
+> Our entire Stanley-based control structure had to be **abandoned at the very first stage**.
+
+---
+
+### 12.3 Pivoting the System – From Depth-Based to Localization-Based Waypoints
+
+Since depth-derived 3D waypoints were impossible,  
+we shifted our strategy toward **Localization-driven waypoint tracking**.
+
+In other words:
+
+- Instead of generating 3D waypoints from SCNN + Depth,  
+- We chose to rely on **SLAM** for stable pose estimation  
+- And use **predefined global waypoints** on the map  
+- Selecting the nearest waypoint based on the SLAM pose
+
+This shift later became the foundation for the full transition to:
+
+- **SLAM + Global Waypoint navigation**, and  
+- **Pure Pursuit** as the main steering controller.
+
+---
+
+### 12.4 Summary
+
+- PID was unstable in curves  
+- Stanley required **accurate 3D waypoints**  
+- We attempted **SCNN + Depth → 3D waypoints → Stanley**  
+- QLabs Depth camera bug made this **impossible**  
+- The system pivoted to a **Localization + waypoint** structure
+
+Stanley did not reach deployment,  
+but its failure directly shaped the direction of the system  
+and led us toward the control architecture that eventually succeeded.
+
+
 
 ---
 
@@ -1353,291 +1351,291 @@ waypoint 맵에 **구간 타입 정보**를 포함시켰다.
 
 ---
 
-## 15. 경로 계획 – RRT와 DQN의 결합
+## 15. Path Planning – Combining RRT and DQN
 
 <img src="images/rrt1.png" width="450" alt="RRT Exploration and Global Path Skeleton"/>
 <img src="images/rrt10.png" width="450" alt="Global Path and PH-Based Avoidance Paths"/>
 
-자율주행 시스템을 구현하는 과정에서 우리는 **인지(Perception)** 와 **위치 추정(Localization)** 을 단계적으로 구축해 왔다.  
-앞 단계에서는 SCNN 기반 차선 인지를 통해 트랙의 중심선을 추출하고, 이를 depth 정보와 결합해 waypoint를 생성하여 주행을 시도했다. 초기에는 Stanley 제어기를 사용했으나, depth 카메라의 한계로 인해 최종적으로 **Pure Pursuit 제어기**로 전환하였다.
+While building the autonomous driving system, we gradually developed **Perception** and **Localization**.  
+In earlier stages, we used SCNN-based lane detection to extract the track centerline, combined it with depth information, and generated waypoints for driving. We initially attempted to use the Stanley controller, but due to limitations of the depth camera, we ultimately adopted the **Pure Pursuit controller** as our steering method.
 
-그러나 Pure Pursuit 제어기의 특성상, 차량이 보고 있는 **국지적(local) waypoint** 만으로는 한계가 있었다.  
-트랙 전체를 아우르는 **Global Path** 가 필요하다는 문제가 드러난 것이다.
+However, by design, Pure Pursuit operates on **local waypoints** visible to the vehicle at each time step.  
+This revealed a critical limitation:
 
-Global Path를 생성하기 위해서는 먼저 차량의 위치를 **절대좌표계에서 정확하게 파악**해야 했고, 이를 위해 우리는 Cartographer 기반 SLAM을 도입하여 **Localization 모듈**을 완성했다.
+> Local waypoints alone were not enough – we needed a **Global Path** that covered the entire track.
 
-SLAM을 통해 차량의 위치를 지도 좌표계에서 안정적으로 얻을 수 있게 되었지만, 이제 새로운 문제가 나타났다.
+To generate such a Global Path, we first had to know the vehicle’s pose accurately in an **absolute coordinate frame**.  
+For this, we introduced Cartographer-based SLAM and completed our **Localization module**.
 
-> “차선도 보고, 위치도 알고 있는데  
-> 이제 차량을 **어디로**, **어떤 순서로** 움직여야 하지?”
+Once SLAM allowed us to obtain a stable pose on the map frame, a new question appeared:
 
-단순히 차선 중심을 따라가는 것이 아니라, 실제 택시처럼 여러 **Pickup·Dropoff 지점**을 제한된 시간 안에 가장 효율적으로 방문해야 했다.  
-즉, 전역 경로를 어떻게 생성할지(**Global Path Planning**)와  
-여러 Ride의 방문 순서를 어떻게 최적화할지라는 **고난도의 경로 계획 문제**가 본격적으로 등장한 것이다.
+> “Now that we can see the lanes and know our position,  
+> where should the vehicle go next, and in **what order**?”
+
+We were no longer just following a lane centerline.  
+We now had to operate like a real taxi, visiting multiple **pickup/dropoff points** within a limited time and doing so as efficiently as possible.
+
+In other words, two high-level planning problems emerged:
+
+- How to generate a **global path** (Global Path Planning), and  
+- How to **optimize the visiting order** of multiple rides.
 
 ---
 
-### 15.1 문제 정의 – “제한 시간 내에 택시를 가장 효율적으로 움직이려면?”
+### 15.1 Problem Definition – “How do we move a taxi most efficiently within a time limit?”
 
-Quanser ACC 대회의 메인 미션은 **도시형 트랙 내에서 택시를 운용**하는 것이었다.  
-대회 측은 5분 동안 수행해야 하는 공식 Ride 리스트(A, B, C … T)를 제공했으며,  
-각 Ride(A~T)는 **고정된 Pickup/Dropoff 지점**을 포함하고 있었다. 예시는 다음과 같다.
+The main mission of the Quanser ACC competition was to operate a **taxi on an urban-style track**.  
+The organizers provided an official list of Rides (A, B, C … T) that had to be executed within 5 minutes.  
+Each Ride (A–T) contained fixed **pickup/dropoff points**. For example:
 
 - Ride A: 1 → 8  
   - Node 1 = \([0.269, -0.049, 90°]\)  
   - Node 8 = \([-0.749, 1.077, 180°]\)
 
-이에 따라 차량은 5분 동안 다음 과정을 반복해야 한다.
+During the 5-minute mission, the vehicle must repeatedly:
 
-1. Ride의 Pickup → Dropoff 지점을 순서대로 방문하고  
-2. Taxi Hub로 복귀한 뒤  
-3. 다음 Ride를 수행하는 과정을 반복
+1. Visit the Ride’s Pickup → Dropoff in order  
+2. Return to the Taxi Hub  
+3. Start the next Ride
 
-즉, 문제는 단순히 “두 점 사이 최단 경로”가 아니라,
+Thus, the problem was not simply “shortest path between two points,” but rather:
 
-> 여러 Ride의 지점을 어떤 **순서**와 **경로**로 방문해야  
-> 제한된 시간 안에 **최대 수익**을 낼 수 있는가?
+> Given multiple Ride locations,  
+> in what **order** and via which **paths** should we visit them  
+> to achieve **maximum profit within the time limit**?
 
-라는 **조합 최적화 + 경로 계획 문제**였다.
-
----
-
-### 15.2 왜 RRT를 선택했는가 – ‘경로 생성기’로서의 역할
-
-트랙은 다음과 같은 요소를 포함한 복잡한 **연속 공간(Continuous Space)** 구조였다.
-
-- 곡률이 큰 커브
-- roundabout
-- 교차로
-- 양방향 단일차선 구조
-- 경계가 꼬이는 구간
-
-격자 기반 탐색 방식(Dijkstra 등)만으로는
-
-- 차량의 폭과 차선 경계 사이의 여유,
-- 연속적인 커브 형태와 실제 주행 가능한 궤적
-
-을 충분히 반영하기 어렵다고 판단했다.
-
-그래서 우리는 “경로를 탐색하는 방법”을 찾아보다가  
-**RRT(Rapidly-Exploring Random Tree)** 에 주목하게 되었다.
-
-RRT는:
-
-- 연속 공간을 직접 샘플링하면서  
-- 장애물을 피하는 경로를 빠르게 생성할 수 있고  
-- 고차원에서도 잘 동작한다는 점 때문에  
-
-실제 자율주행 연구에서도 널리 쓰이는 방법이라는 것을 논문과 자료를 통해 확인했다.
-
-결론적으로, 우리는 전역 경로(Global Path)를 설계할 때 다음과 같은 방향을 잡았다.
-
-> “트랙 전체를 자유공간(Free Space)으로 정의하고,  
-> 그 안을 RRT로 샘플링해서 경로를 만드는 구조로 가자.”
-
-즉, 기존 그래프 탐색 대신  
-**샘플링 기반의 경로 생성기**로서 RRT를 사용하기로 한 것이다.
+This is a combined **combinatorial optimization + path planning** problem.
 
 ---
 
-### 15.3 RRT 적용 방식 – 오프라인, 구간 분할, 그리고 스무딩
+### 15.2 Why RRT? – RRT as a “Path Generator”
 
-#### 1) 왜 RRT를 오프라인에서 돌렸는가?
+The track is a complex **continuous space** with features such as:
 
-우리는 RRT를 **실시간으로 실행해 경로를 생성하며 달리는 용도**로 사용하지 않았다.  
-RRT는 강력하지만, 무작위 샘플링 특성 때문에 다음과 같은 문제가 있다.
+- curves with high curvature,  
+- roundabouts,  
+- intersections,  
+- bidirectional single-lane segments, and  
+- segments where lane boundaries twist and merge.
 
-- 실행마다 경로가 조금씩 달라지고 (RRT의 무작위성)  
-- 샘플링 기반이라 생성된 경로가 **최적 경로라는 보장이 없으며**  
-- 일부 실행에서는 **비효율적이거나 이상한 경로**가 나올 수도 있다.
+We judged that purely grid-based search methods (e.g., Dijkstra on a uniform grid) would struggle to fully capture:
 
-그래서 전략을 바꿨다.
+- the clearance between vehicle width and lane boundaries, and  
+- the continuous curvature and physically feasible trajectories.
 
-> “RRT는 오프라인에서 여러 번 수행하여  
-> **가장 좋은 경로만 선택하는 방식**으로 사용하자.”
+While exploring candidate methods, we focused on  
+**RRT (Rapidly-Exploring Random Tree)**.
 
-그리고 선택된 경로는
+RRT:
 
-- Elastic Band  
-- Spline smoothing  
+- samples directly in continuous space,  
+- can quickly generate obstacle-avoiding paths, and  
+- scales relatively well to higher-dimensional spaces.
 
-과 같은 기법으로 부드럽게 다듬어,  
-제어기에 넣어도 안정적으로 동작하는 **최종 Global Path**를 만들었다.
+We confirmed through papers and references that RRT is widely used in real autonomous driving research.
 
-이렇게 하면 **대회 현장에서는 RRT를 실행할 필요가 없다.**  
-실제 주행 시에는 **이미 검증된 Global Path를 그대로 따라가기만 하면 되기 때문에**,  
-랜덤성 문제를 구조적으로 해결할 수 있었다.
+As a result, for global path design, we adopted the following direction:
 
-#### 2) 왜 트랙 전체를 한 번에 하지 않고, 구간별로 나누었는가?
+> “Define the entire track as a free space,  
+> and generate paths by sampling this region using RRT.”
 
-초기에는
-
-> “트랙 전체를 하나의 자유공간으로 두고 RRT를 돌려 보자”
-
-고 시도했다. 그러나:
-
-- 트리가 특정 영역(예: 긴 직선 구간)에만 몰려 자라거나  
-- 교차로, roundabout 등의 복잡한 구조 때문에  
-  자유공간의 정의가 뒤섞이는 문제가 발생했다.
-
-그래서 다음과 같은 방식으로 접근했다.
-
-1. 트랙을 **구간 단위**로 분할  
-   - 교차로 사이  
-   - roundabout  
-   - 직선 구간  
-   - 곡선 구간 등
-2. 각 구간을 **별도의 자유공간**으로 정의한 뒤  
-3. 구간별로 **독립적인 RRT**를 수행
-
-이렇게 생성된 **구간별 최적 경로**들을 이어 붙여  
-하나의 **Global Path**를 구성했다.
+In other words, instead of classic graph search,  
+we decided to use **RRT as a sampling-based path generator**.
 
 ---
 
-### 15.4 Directed Graph로의 변환 – 자료구조·알고리즘 수업의 재해석
+### 15.3 How We Applied RRT – Offline, Segmented, and Smoothed
 
-RRT로부터 얻은 Global Path는 **연속적인 좌표들의 집합**이다.  
-그러나 택시 문제를 풀기 위해서는 단순히 경로를 따라 가는 것만으로는 부족했다.
+#### 1) Why run RRT offline?
 
-우리는 다음과 같은 의사결정을 해야 했다.
+We did **not** use RRT as a real-time online planner that generates paths during driving.  
+Despite its strengths, RRT’s stochastic nature introduces several issues:
 
-- 교차로에서 **어떤 방향으로 갈 것인지**  
-- 역주행이 허용되지 않는 **일방통행 구조**를 어떻게 반영할지  
-- 각 Ride의 **pickup/dropoff 지점을 반드시 방문해야 하는 제약**을 어떻게 관리할지
+- Each run can produce slightly different paths (randomness),  
+- Generated paths are not guaranteed to be optimal, and  
+- Some runs may yield very inefficient or even unreasonable paths.
 
-이러한 의사결정은 연속 좌표보다는,  
-트랙을 **노드(Node)** 와 **간선(Edge)** 로 표현한 **directed graph** 구조가 더 적합했다.
+So we changed the strategy:
 
-따라서 우리는 Global Path를 기반으로:
+> “Run RRT **offline** multiple times,  
+> and only keep the **best paths**.”
 
-1. 분기점/합류점/교차로를 **노드(Node)** 로 정의하고  
-2. 실제 주행 가능한 방향만을 **방향성 간선(Directed Edge)** 으로 연결하여  
-3. **역주행 가능성은 애초에 그래프 구조에서 제거**하였다.
+The selected paths were then processed with:
 
-이 과정에서 자료구조·알고리즘 수업에서 배웠던 개념들이 자연스럽게 활용되었다.
+- Elastic Band, and  
+- Spline-based smoothing
 
-- 그래프를 정의하고,  
-- 노드와 간선을 구성하고,  
-- 경로 탐색이 가능한 형태로 구조화하는 과정 자체가  
+to generate a **final global path** that the controller could follow stably.
 
-수업에서 이론적으로 배웠던 **그래프 모델링을 실제 트랙에 적용**한 사례가 된 것이다.
+With this, **there was no need to run RRT at the competition site.**  
+During actual driving, the vehicle simply followed a **pre-validated Global Path**, eliminating the randomness problem at the system level.
+
+#### 2) Why segment the track instead of treating it as a single space?
+
+Initially, we tried:
+
+> “Let’s treat the entire track as one big free space and run RRT once.”
+
+However, we ran into the following issues:
+
+- The tree tended to grow only in certain regions (e.g., long straight segments),  
+- Intersections, roundabouts, and complex structures made the definition of “free space” ambiguous and tangled.
+
+To address this, we changed to a segmented approach:
+
+1. **Divide the track into segments**  
+   - between intersections,  
+   - roundabout regions,  
+   - straight segments,  
+   - curved segments, etc.  
+2. Define each segment as an independent free space  
+3. Run **RRT separately on each segment**
+
+We then stitched together the **best paths for each segment**  
+to form a single **Global Path** over the full track.
 
 ---
 
-### 15.5 왜 DQN인가 – Ride 순서 최적화 문제
+### 15.4 Converting to a Directed Graph – Reinterpreting Data Structures & Algorithms
 
-Directed Graph가 준비되면,  
-두 노드 간 최단 경로는 학부 수업에서 배운 **Dijkstra / BFS / DFS** 와 같은 기존 알고리즘으로 충분히 계산 가능하다.
+The Global Path obtained from RRT is a set of **continuous coordinates**.  
+But to solve the taxi problem, simply following that path is not enough.
 
-그러나 우리가 풀어야 하는 핵심 문제는 “최단 경로”가 아니었다.
+We needed a structure capable of representing decisions like:
 
-> 여러 개의 pickup/dropoff 지점을  
-> **어떤 순서로 방문해야 5분 동안 최대 수익을 얻는가?**
+- Which direction to take at intersections  
+- How to encode one-way constraints and prevent wrong-way travel  
+- How to enforce that all pickup/dropoff nodes for each Ride are visited
 
-이 문제는 **단일 경로 탐색**이 아니라 **순서 최적화 문제**이며,  
-우리가 배운 기존 알고리즘만으로는 해결이 불가능했다.
+For these decision-making processes, a **directed graph** representation of the track, with:
+
+- **nodes (Vertices)** and  
+- **edges (Directed Edges)**,
+
+was much more appropriate than raw continuous coordinates.
+
+Based on the Global Path, we:
+
+1. Defined branch points, merges, and intersections as **nodes**,  
+2. Linked them using **directed edges** that respect actual drivable directions,  
+3. Structurally removed the possibility of wrong-way driving by design.
+
+In doing so, concepts from our **Data Structures & Algorithms** coursework naturally came into play.
+
+- Defining graphs,  
+- Constructing nodes and edges,  
+- Structuring them so that path search is possible  
+
+all became an example of applying **graph modeling concepts learned in class to a real track.**
+
+---
+
+### 15.5 Why DQN? – Optimizing the Ride Visit Order
+
+Once the directed graph is prepared,  
+the shortest path between any two nodes can be computed using standard algorithms such as **Dijkstra, BFS, or DFS**.
+
+However, our core problem was not just “shortest path.”
+
+> Given multiple pickup/dropoff locations,  
+> **in what order** should we visit them  
+> to maximize profit within 5 minutes?
+
+This is not a single-path problem but a **visit order optimization** problem.  
+The classical algorithms we learned are not designed to solve this directly:
 
 - **BFS / DFS**  
-  → 모든 순열을 탐색해야 하므로 규모가 커지면 확장 불가  
+  → would require exploring nearly all permutations; not scalable.  
 - **Dijkstra**  
-  → 한 쌍의 지점 간 최단경로만 제공  
+  → only gives the shortest path between a single pair of nodes.
 
-즉, “경로 찾기”는 해결되었지만,  
-“**방문 순서 결정**”이라는 근본적인 문제는 여전히 남아 있었다.
+In other words, “finding paths” was solved,  
+but “**deciding visit order**” remained unresolved.
 
-이 지점에서, 기존 지식만으로는 한계가 분명했기 때문에  
-우리는 “정책을 스스로 학습하는 방식”인 **강화학습(Reinforcement Learning)** 을 도입하기로 했다.
+At this point, it became clear that our previous knowledge alone was not sufficient.  
+We therefore introduced **Reinforcement Learning (RL)** – a framework where a policy is learned through interaction and rewards.
 
-참고한 자료는 다음과 같다.
+We referred to:
 
 - Sutton & Barto, *Reinforcement Learning: An Introduction*  
-- 오일석 & 이진선, *파이썬으로 만드는 인공지능*
+- Oilseok & Lee, *파이썬으로 만드는 인공지능 (Building AI with Python)*
 
-이를 통해 Q-learning 구조를 이해한 뒤,  
-이 문제를 **DQN(Deep Q-Network)** 으로 모델링할 수 있다는 결론에 도달하였다.
+After understanding the structure of Q-learning,  
+we concluded that this problem could be modeled as a **DQN (Deep Q-Network)**.
 
-DQN을 선택한 이유는 다음과 같다.
+We chose DQN for the following reasons:
 
-- Directed Graph에서의 의사결정은  
-  “현재 노드에서 갈 수 있는 몇 개의 방향 중 하나를 고르는”  
-  **이산적(discrete) 행동 구조**이기 때문에,  
-  Q-learning 기반인 **DQN이 문제의 특성과 가장 잘 맞았다.**
-- 여러 Ride 조합이 만들어내는 방문 순서 결정 문제는  
-  **규칙 기반으로 직접 정의하기 어렵다.**  
-  그래서 우리는 **보상 함수**만 설계하고,  
-  그 보상 신호를 기반으로 **DQN이 경험을 통해 최적 방문 순서를 학습**하도록 하는 구조를 택했다.
+- Decisions on the directed graph are **discrete actions** (“from the current node, choose one of the outgoing edges”),  
+  which matches well with **Q-learning–based methods** like DQN.
+- The visit order problem induced by many Ride combinations is extremely hard to encode as mere hand-crafted rules.  
+  Instead, we design a **reward function**, and let **DQN learn an optimal visit policy** from experience.
 
-이를 바탕으로 문제를 다음과 같이 정의했다.
+We defined the problem as:
 
-- **상태(state)** : 남은 경유지 집합, 현재 위치  
-- **행동(action)** : 다음에 방문할 노드 선택  
-- **보상(reward)** : 이동 거리 절약, 역주행 패널티, Ride 완료 보상  
+- **State**: set of remaining destinations, current node  
+- **Action**: which node to visit next  
+- **Reward**: savings in travel distance, penalties for any illegal moves (e.g., wrong-way), bonuses for completing Rides
 
-이렇게 해서 단순 거리 최적화가 아닌,
+This allowed us to learn not just shortest paths, but:
 
-> “최대 수익을 달성하는 방문 순서 정책”
-
-을 학습할 수 있었다.
+> A **visit-order policy** that aims to maximize profit within the time horizon.
 
 ---
 
-### 15.6 왜 실시간이 아니라 오프라인 DQN인가 – 운영 전략으로의 전환
+### 15.6 Why Offline DQN Instead of Real-Time DQN? – Turning It Into an Operational Strategy
 
-초기에는 DQN을 **실시간으로 실행**하여,  
-경유해야 하는 경유지의 노드 번호를 넣고 **경로의 순서를 계산하는 방식**을 시도했다.  
-하지만 실험해 보니:
+Initially, we tried running DQN **in real time** to compute the sequence of nodes for each Ride on the fly.  
+But experiments showed:
 
-- 노드 전체 개수: 약 60개  
-- DQN이 한 Ride의 최적 주행 시퀀스를 계산하는 데: **약 10~15초**
+- Total number of nodes: about 60  
+- Time for DQN to compute an optimal sequence for a single Ride: **around 10–15 seconds**
 
-Ride는 5분 동안 여러 개를 수행해야 했기 때문에,  
-**실시간 계산은 비효율적**이라는 결론에 도달했다.
+Since multiple Rides have to be completed within a 5-minute window,  
+real-time computation was clearly **inefficient**.
 
-따라서 전략을 다음과 같이 바꾸었다.
+We therefore changed the strategy:
 
-- 모든 Ride A~T에 대해  
-  **DQN이 최적의 시퀀스를 미리 계산**해 두고,
-- 대회에서는  
-  - Ride 번호 입력  
-  - → 미리 계산된 노드 시퀀스 불러오기  
-  - → 주행 시작  
+- For all Rides A–T,  
+  **pre-compute the optimal node sequence with DQN offline**, and
+- During the competition:  
+  - input the Ride ID,  
+  - → load the precomputed node sequence,  
+  - → start driving immediately.
 
-이 구조를 통해 현장에서는 **즉시 차량이 출발할 수 있도록** 운영 효율을 높일 수 있었다.
-
----
-
-### 15.7 최종 구조 정리 – RRT, Directed Graph, DQN의 역할
-
-이제 RRT, Directed Graph, DQN 각각이 어떤 역할을 했는지 정리하면,  
-최종 구조는 다음과 같다.
-
-1. **RRT 기반 Global Path 생성 (오프라인)**  
-2. Global Path를 바탕으로 **구간별 Directed Graph 구성**  
-3. **DQN이 그래프 위에서 다음에 방문할 노드/경유지 시퀀스를 결정**  
-4. 선택된 노드에 대응하는 **waypoint JSON을 순서대로 로딩**  
-5. 각 waypoint 시퀀스를 **Pure Pursuit 제어기**로 추종  
-   (자세한 내용은 제어기 항목 참조)
+This converted DQN from an online planner into an **offline policy generator** and  
+significantly improved operational efficiency.
 
 ---
 
-### 15.8 이 섹션이 프로젝트 전체에서 갖는 의미
+### 15.7 Final Architecture – Roles of RRT, Directed Graph, and DQN
 
-경로 계획 파트에서 우리는:
+Combining the above components, the final structure is:
 
-- 자료구조·알고리즘 수업에서 배운 **그래프 모델링과 탐색 개념**을  
-  실제 트랙 구조에 적용했고,
-- **RRT**를 활용해 복잡한 연속 공간에서의 **전역 경로 생성**을 구현했으며,
-- 기존 접근법으로 해결하기 어려운 **방문 순서 최적화 문제**를  
-  강화학습 교재와 논문을 바탕으로 **DQN 기반 정책 결정 구조**로 확장했다.
+1. **RRT** generates Global Paths offline.  
+2. The Global Path is converted into **segment-wise directed graphs**.  
+3. **DQN** runs on this graph to determine the sequence of nodes / waypoints to visit.  
+4. For the resulting node sequence, the corresponding **waypoint JSON files are loaded in order**.  
+5. Each waypoint sequence is tracked using the **Pure Pursuit controller**  
+   (details are described in the control section).
 
-즉, 이 경로 계획 모듈은
+---
 
-> 학부에서 배운 기초 지식과  
-> 추가로 학습한 고급 개념을  
-> 실제 트랙의 제약 조건에 맞추어 **통합적으로 구현해낸 완성형 사례**이며,
+### 15.8 Significance of This Section in the Overall Project
 
-본 프로젝트의 **핵심 기술적 성취를 가장 잘 보여주는 부분**이라고 할 수 있다.
+In the path planning module, we:
+
+- Applied **graph modeling and search concepts** from our Data Structures & Algorithms coursework to a real-world track,  
+- Used **RRT** to generate **global paths in a complex continuous environment**, and  
+- Tackled the difficult **visit-order optimization** problem using DQN,  
+  guided by reinforcement learning textbooks and research.
+
+In this sense, the path planning module is:
+
+> A concrete example where undergraduate-level fundamentals  
+> and more advanced concepts were  
+> **integrated and adapted to a real competition environment**,  
+
+and it represents **one of the most technically complete and mature components** of the entire project.
 
 
 ---
