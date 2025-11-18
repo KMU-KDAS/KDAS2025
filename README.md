@@ -504,6 +504,7 @@ Because of that, we think this work is best described as:
 
 <img src="images/control18.gif" width="450" alt="Motor Control – PID Autotuning in Simulink"/>
 
+
 > “What does it actually mean to ‘move’ a vehicle?”
 
 Our first concern was how to make the vehicle move. For the wheels to rotate, the motor must be controlled; therefore, the starting point of driving was **precise motor control**. We realized that the first step toward implementing autonomous driving had to begin with **motor control**.
