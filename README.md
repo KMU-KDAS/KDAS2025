@@ -1007,7 +1007,7 @@ The question,
 was not merely a technical issue. It taught us that perception outputs must be **translated into the “language of paths”**—a comprehensive reasoning process in its own right.
 
 ---
-# 12. 궤적 추종 제어의 시작 – Stanley Controller
+## 12. 궤적 추종 제어의 시작 – Stanley Controller
 
 Xytron 대회에서 차량을 처음 실제로 움직여 보았을 때, 우리는 **PID 제어기의 한계**를 즉시 체감했다.
 
@@ -1023,7 +1023,7 @@ PID를 넘어서는 **구조적인 조향 제어기**가 필요했고, 그때 �
 
 ---
 
-## 12.1 Stanley를 위한 첫 설계: SCNN + Depth 기반 3D Waypoint
+### 12.1 Stanley를 위한 첫 설계: SCNN + Depth 기반 3D Waypoint
 
 <p align="center">
   <img src="images/control5.png" width="450"/>
@@ -1062,7 +1062,7 @@ Stanley는 이론적으로도 실전에서도 **가장 강력한 조향 제어�
 
 ---
 
-## 12.2 예상 밖의 장애물 – Depth 카메라 버그로 인한 전면 중단
+### 12.2 예상 밖의 장애물 – Depth 카메라 버그로 인한 전면 중단
 
 그러나 실험 단계에서 **치명적 문제**가 발생했다.
 
@@ -1088,7 +1088,7 @@ Depth가 없으면:
 
 ---
 
-## 12.3 다음 단계 – Waypoint 생성을 위해 Localization에 집중하다
+### 12.3 다음 단계 – Waypoint 생성을 위해 Localization에 집중하다
 
 - Stanley를 쓰려면 **3D waypoint가 필요**하고  
 - 3D waypoint를 만들려면 **Depth가 필요**하다.
@@ -1114,7 +1114,7 @@ Depth가 없으면:
 
 ---
 
-## 12.4 요약
+### 12.4 요약
 
 - PID는 곡률 변화에 매우 취약하여 실전에서 불안정  
 - Stanley는 가장 이론적이고 실전적으로 이상적인 조향 제어기  
