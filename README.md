@@ -1008,130 +1008,266 @@ The question,
 was not merely a technical issue. It taught us that perception outputs must be **translated into the “language of paths”**—a comprehensive reasoning process in its own right.
 
 ---
-## [12. Beginning Trajectory Tracking – Stanley Controller](Product/Control/Steering%20&%20Breaking%20Control/)
+## 12. 궤적 추종 제어의 시작 – Stanley Controller
+Xytron 대회에서 차량을 처음으로 움직여 보았을 때, 우리는 PID 제어기의 한계를 즉시 체감했다.  
+직선에서는 어느 정도 정상 주행이 가능했지만,
 
-Xytron 대회에서 차량을 처음 실제로 움직여 보았을 때, 우리는 **PID 제어기의 한계**를 즉시 체감했다.
+- 코너 진입 시 진동  
+- 오버슈트·언더슈트  
+- 불안정한 궤적 유지
 
-- 직선에서는 어느 정도 정상 주행이 가능했지만  
-- 코너 진입 시 **진동**, **오버슈트**, **언더슈트**가 반복되었고  
-- 차량은 안정적인 궤적을 유지하지 못했다  
+이 문제가 반복되었다.
 
-그때 우리는 분명히 깨달았다.
+그때 우리는 명확히 알 수 있었다.  
+**“단순한 피드백 제어만으로는 자율주행을 만들 수 없다.”**
 
-> **“단순한 피드백 제어만으로는 자율주행을 만들 수 없다.”**
-
-PID를 넘어서는 **구조적인 조향 제어기**가 필요했고, 그때 가장 먼저 고려한 것이 바로 **Stanley 제어기**였다.
+그래서 PID의 구조적 한계를 넘어설 제어기가 필요했고, 가장 먼저 떠올린 것이 바로 **Stanley 제어기**였다.
 
 ---
 
 ### 12.1 Stanley를 위한 첫 설계: SCNN + Depth 기반 3D Waypoint
-
-<p align="center">
-  <img src="images/control5.png" width="450"/>
-</p>
+<img src="images/control5.png" width="450"/>
 
 Stanley를 선택한 이유는 명확했다.
 
-- **2005 DARPA Grand Challenge 우승 차량의 실제 제어기**  
+- 2005 DARPA Grand Challenge 우승 차량의 실제 제어기  
 - 센서 기반 waypoint 추종에 최적화  
-- 고속 주행에서도 검증된 안정성  
-- 우리가 구축하려는 **센서 기반 실시간 자율주행 구조와 높은 적합성**
+- 고속 상황에서 검증된 안정성  
+- 우리가 구축하려는 실시간 자율주행 구조와 높은 적합성  
 
-Stanley 제어기는 다음 값들을 이용하여 조향을 계산한다.
+Stanley 제어기는 다음 값들을 이용해 조향을 계산한다.
 
-- 횡오차 (**cross-track error**)  
-- 헤딩 오차 (**heading error**)  
-- 차선 곡률 (**curvature**)  
+- 횡오차 (cross-track error)  
+- 헤딩 오차 (heading error)  
+- 차선 곡률 (curvature)
 
-이 세 요소는 PID보다 훨씬 **기하학적으로 정당한 조향 응답**을 만든다.  
-그러나 문제는 명확했다.
+이 값들은 단순한 오차 피드백 구조인 PID보다 훨씬 명확한 기하학적 조향 근거를 제공한다.
 
-> **이 모든 값은 ‘차량 좌표계 기준의 실세계 경로(3D waypoint)’가 전제되어야 한다는 점이다.**
+그러나 문제가 있었다.  
+**카메라 이미지 + SCNN 마스크는 2D 평면 정보**이기 때문에, 이들만으로 위 변수들을 절대로 직접 계산할 수 없었다.
 
-즉, Stanley를 제대로 사용하려면 단순한 이미지 기반 픽셀 좌표가 아니라  
-**월드 좌표계에서 정의된 실제 차선 경로**가 필요했다.
+특히 2D 픽셀 좌표에서 보이는 곡률은 단지  
+**“화면 상의 곡선(curve)”**에 불과하며,  
+실제 차량 기준 거리 단위(m)에서 정의되는 **물리적 곡률(1/m)**과는 전혀 다른 값이다.
 
-<img src="images/depth1.png" width="450" alt="SCNN + Depth-Based 3D waypoints"/>
+그래서 Depth 카메라를 이용해 각 픽셀의 실제 거리를 추정하고, 이를 기반으로 **3D waypoint**를 생성하는 방식을 사용했다.
 
-이를 해결하기 위해 우리는 **3D waypoint 생성 파이프라인**을 설계했다.
+이 과정을 통해 단순한 영상상의 차선이  
+**실제 도로의 3차원 경로로 재해석**되며,  
+Stanley가 필요로 하는 모든 값(곡률·횡오차·헤딩오차)을 계산할 수 있게 되었다.
 
-1. **SCNN으로 차선 마스크 검출**  
-2. **Depth 카메라로 각 픽셀의 실제 거리 추정**  
-3. **SCNN + Depth를 결합해 3D waypoint 생성**  
-4. **생성된 waypoint를 Stanley 제어기에 입력**
+#### 3D waypoint 파이프라인
+1. SCNN으로 차선 마스크 검출  
+2. Depth 카메라로 각 픽셀의 실제 거리 추정  
+3. 두 정보를 결합해 3D waypoint 생성  
+4. 생성된 waypoint를 Stanley 제어기에 입력  
 
-이 파이프라인이 정상적으로 작동했다면,  
-Stanley는 이론적으로도 실전에서도 **가장 강력한 조향 제어기**가 될 수 있었다.
+이 파이프라인이 성공했다면,  
+Stanley는 이론적으로도 실전에서도 가장 강력한 조향 제어기가 될 수 있었다.
 
 ---
 
 ### 12.2 예상 밖의 장애물 – Depth 카메라 버그로 인한 전면 중단
+그러나 실험 과정에서 치명적 문제가 발생했다.
 
-그러나 실험 단계에서 **치명적 문제**가 발생했다.
+QLabs Depth 카메라가 **올바른 depth 값을 제공하지 않는 버그**가 있었다.
 
-> **QLabs Depth 카메라가 시스템 버그로 인해 올바른 Depth 값을 제공하지 않았다.**
+출력된 값은:
 
-출력된 값은 다음과 같았다.
-
-- `0`  
-- `∞`  
+- 0  
+- ∞  
 - 랜덤 노이즈  
 - 프레임마다 들쭉날쭉한 비정상 값  
 
-즉, **실제 거리 정보가 완전히 무너진 상태**였다.
+즉, **실제 거리 정보가 완전히 증발된 상태**였다.
 
 Depth가 없으면:
 
-- SCNN의 픽셀 좌표 → **월드 좌표 변환 불가**  
-- 월드 좌표 없으면 → **Stanley용 3D waypoint 생성 불가**
+- SCNN 픽셀 → 월드 좌표 변환 불가능  
+- 월드 좌표 없으면 → 3D waypoint 생성 불가능  
+- 3D waypoint 없으면 → Stanley 사용 불가능  
 
-결과적으로:
-
-> **Stanley 기반 제어 구조는 초기 단계에서 전면 중단될 수밖에 없었다.**
+결론적으로,  
+**Stanley 기반 제어 구조는 초기 단계에서 전면 중단될 수밖에 없었다.**
 
 ---
 
 ### 12.3 다음 단계 – Waypoint 생성을 위해 Localization에 집중하다
+Stanley를 쓰려면 3D waypoint가 필요하다.  
+3D waypoint를 만들려면 Depth가 필요하다.  
+하지만 Depth는 구조적으로 불가능한 환경이었다.
 
-- Stanley를 쓰려면 **3D waypoint가 필요**하고  
-- 3D waypoint를 만들려면 **Depth가 필요**하다.
+그래서 전략을 전환했다.
 
-그러나 Depth는 **구조적으로 불가능한 환경**이었다.  
-따라서 우리는 전략을 전환했다.
-
-- **Depth 기반 waypoint → 불가능**  
-- **Localization 기반 waypoint → 가능**
+- Depth 기반 waypoint → **불가능**
+- Localization 기반 waypoint → **가능**
 
 즉,
 
-- SLAM을 활용하여 차량의 위치를 안정적으로 추정하고  
-- 트랙 전체의 **전역 waypoint 맵**을 구성한 뒤  
-- 현재 위치에서 가장 가까운 waypoint를 추종하는 방식으로 전환했다.
+- SLAM으로 차량 위치를 안정적으로 추정하고  
+- 트랙 전체의 전역 waypoint를 미리 정의한 뒤  
+- 현재 위치에서 가장 가까운 waypoint를 추종하는 방식으로 전환  
 
-이 결정은 이후
-
-- **Pure Pursuit 선택**,  
-- **SLAM–Waypoint 기반 제어 구조 설계**
-
-로 이어지는 핵심 전환점이 되었다.
+이 결정은 이후 **Pure Pursuit 선택**,  
+그리고 SLAM–Waypoint 기반 제어 구조 설계의 핵심 출발점이 되었다.
 
 ---
 
 ### 12.4 요약
 
-- PID는 곡률 변화에 매우 취약하여 실전에서 불안정  
-- Stanley는 가장 이론적이고 실전적으로 이상적인 조향 제어기  
-- 이를 위해 **SCNN + Depth 기반 3D waypoint**를 만들 계획이었음  
-- 하지만 **QLabs Depth 버그 → 3D waypoint 생성 불가 → Stanley 중단**  
-- 이후 구조를 **SLAM–Waypoint 기반**으로 재편  
+- PID는 곡률 변화에 매우 취약해 실전에서 불안정  
+- Stanley는 이상적이었고 실제 우승 사례도 존재  
+- SCNN + Depth 기반 3D waypoint 계획을 세웠음  
+- 그러나 QLabs Depth 버그로 3D waypoint 생성 불가능 → Stanley 중단  
+- 이후 SLAM–Waypoint 기반 구조로 재편  
 
 Stanley는 실패했지만,  
-이 실패는 오히려 **가장 현실적이고 견고한 제어 구조**를 찾게 해 준 중요한 전환점이었다.
-
+**이 실패는 결국 가장 현실적이고 견고한 제어 구조를 찾게 해 준 중요한 방향 전환점이었다.**
 
 ---
 
-## [13. Localization and Stabilization – SLAM + Kalman Filter](Product/Localization/)
+## 13. 제어의 진화 – Pure Pursuit, 그리고 MPC
+
+Depth 카메라 버그로 인해 Stanley 제어기가 불가능해지자, 우리는 다음 대안으로 **MPC(Model Predictive Control)**을 검토했다.
+
+MATLAB의 다양한 경로 추종 예제를 분석하는 과정에서  
+종·횡 통합 제어 문제에서 MPC가 널리 사용되는 것을 확인했기 때문이다.
+
+"예측 기반 최적 제어"라는 구조는 충분히 매력적이었다.
+
+---
+
+### 13.1 다른 길을 찾다: MPC(Model Predictive Control) 테스트
+
+MPC는:
+
+- 미래 상태 예측  
+- 조향·가속·제약조건을 동시에 고려  
+- 예측 지평선 내에서 최적 입력 선택  
+
+이론적으로 우리가 원하던 “부드럽고 예측적인 제어”에 가장 가까웠다.
+
+그러나 구현 과정에서 다음과 같은 벽이 나타났다.
+
+#### 1) 가장 큰 문제: 정확한 차량 모델의 부재
+MPC는 모델 오차에 극도로 민감하다.  
+하지만 아래 파라미터들을 정확히 알 수 없었다.
+
+- 타이어 cornering stiffness  
+- 관성모멘트 \(I_{zz}\)  
+- 실제 조향·가속 응답  
+
+이 값들은 문서로 제공되지 않았고,  
+실험적으로 추정할 시간과 설비도 없었다.
+
+즉,  
+**“모델이 있어야 쓸 수 있는 제어기인데, 신뢰할 모델을 만들 수 없는 환경”**이었다.
+
+#### 2) 비용함수(cost function) 설계의 난관
+MPC는 Q, R 가중치 설계가 핵심이다.  
+하지만 모델이 정확하지 않으니:
+
+- 어떤 Q/R 조합도 일관된 결과를 내지 못함  
+- 튜닝 기준이 존재하지 않음  
+
+결과적으로,
+
+- MPC는 강력하지만  
+- 학부 장비·시간·모델링 제약 속에서는 "대회용 안정성" 확보가 불가능한 제어기였다.
+
+그래서 MPC는 최종적으로 제외했다.
+
+---
+
+### 13.2 최종 선택: Pure Pursuit + Global Waypoints + Localization
+
+정리하면:
+
+- Stanley → Depth 버그로 실행 불가  
+- MPC → 정확한 모델 부족으로 안정성 확보 불가  
+
+**현실적으로 남은 선택지는 단 하나였다: Pure Pursuit**
+
+Pure Pursuit의 장점:
+
+- 정밀한 3D 차선 정보 불필요  
+- 고차 차량 동역학 모델 불필요  
+- look-ahead point만으로 안정적인 조향 가능  
+- 계산량 적어 실시간성 우수  
+
+즉,  
+우리의 센싱 환경, 모델링 제약, 시뮬레이터 환경, 대회 규칙을 모두 고려했을 때  
+**Pure Pursuit는 가장 단순하면서 가장 안정적인 유일한 선택이었다.**
+
+---
+
+### 13.3 Pure Pursuit의 문제점과 해결 전략
+
+Pure Pursuit를 실제 주행에 적용하면서 두 가지 문제가 반복되었다.
+
+---
+
+#### 1) 직선 구간에서의 흔들림(Oscillation)
+
+원인:
+
+- 작은 오차도 과도하게 조향 반영  
+- 핸들이 좌우로 흔들림  
+
+해결 전략:
+
+- 트랙을 직선 / 곡선 구간으로 분리  
+- waypoint 맵에 구간 타입 포함  
+- 직선에서는  
+  - Look-ahead 크게 설정  
+  - Steering saturation 강하게 적용  
+
+---
+
+#### 2) 곡선 구간에서의 안쪽 침투(Inside Drift)
+
+원인:
+
+- 곡선에서 look-ahead가 너무 길면 직선처럼 추종  
+- 차량이 코너 안쪽으로 말림  
+- 속도 높을수록 언더스티어 증가  
+
+해결 전략:
+
+- 곡선에서는  
+  - Look-ahead 짧게 설정  
+  - Target velocity 낮게 설정  
+
+이를 통해:
+
+- 곡률 변화에 더 빠르게 대응  
+- 조향 여유 확보  
+
+서로 다른 구간별 튜닝을 적용한 Pure Pursuit는  
+직선 진동 문제와 곡선 안쪽 침투 문제를 모두 해결하며  
+안정적 waypoint 추종을 달성했다.
+
+---
+
+### 13.4 결론 – 여러 실패 끝에 얻은 가장 현실적인 해답
+
+우리는 여러 제어기를 적용하고 실패하는 과정을 통해 다음 결론에 도달했다.
+
+- Depth 버그 → Stanley 불가능  
+- 모델 부족 → MPC 불가능  
+- Global waypoint와 Localization 기반에서 안정적인 제어 → Pure Pursuit뿐  
+
+Pure Pursuit를 선택한 이유는  
+“가장 간단해서”가 아니라  
+**우리 환경에서 유일하게 책임질 수 있는 제어기였기 때문**이다.
+
+하지만 Pure Pursuit는 “주어진 경로를 따라가기만 하는 제어기”이므로  
+우리는 이후 강화학습 기반 Path Planning과  
+고정확도 Localization의 중요성을 더욱 절실하게 깨닫게 되었다.
+
+---
+
+## [14. Localization and Stabilization – SLAM + Kalman Filter](Product/Localization/)
 
 <img src="images/local2.jpg" width="450" alt="SLAM Trajectory with Noise and Stabilization"/>
 
@@ -1182,192 +1318,6 @@ For this project, we chose a simpler but more robust method. We observed that:
 Thus, we decided to **truncate** SLAM coordinates to one decimal place, effectively quantizing the pose with 0.1 m resolution.
 
 This approach is not as elegant as a Kalman Filter and does reduce positional resolution. However, it significantly suppressed overreactions in control and produced **stable and consistent behavior** in real driving.
-
----
-
-## [14. 제어의 진화 – Pure Pursuit, 그리고 MPC](Product/Control/Steering%20&%20Breaking%20Control/)
-
-
-<img src="images/control19.gif" width="450" alt="Control Stack – Pure Pursuit and MPC"/>
-
-시뮬레이터의 Depth camera 버그로 인하여 정확한 횡오차와 곡률 계산을 하지못하여 Stanly 제어기가 사용이 어려워지자, 우리는 자연스럽게 다음 대안으로 **MPC(Model Predictive Control)** 를 검토하게 되었다.  
-MATLAB에서 제공하는 여러 경로 추종 예제를 분석하는 과정에서, 복잡한 종·횡 통합 제어 문제에서 MPC가 자주 등장한다는 점을 확인했기 때문이다.  
-
-특히 **“예측 기반 최적 제어”** 라는 구조는 충분히 매력적이었다.  
-“우리 차량도 더 정교하게 제어할 수 있지 않을까?”라는 기대도 있었다.
-
----
-
-### 14.1 다른 길을 찾다: MPC(Model Predictive Control) 테스트
-
-실제로 MPC는:
-
-- 미래 상태를 예측하고,
-- 조향·가속·제약조건을 함께 고려하여,
-- 특정 예측 지평선 내에서 **가장 합리적인 입력을 선택하는** 고급 제어 방식이다.
-
-이론적으로는 우리가 원하던 “예측적이고 부드러운 제어”에 가장 잘 맞는 선택처럼 보였다.  
-그러나 구현을 시도하면서, 이 방식이 **학부 수준 환경에서 안정적으로 다루기 어렵다**는 현실적인 벽을 마주하게 되었다.
-
-#### 1) 가장 큰 문제: 정확한 차량 모델의 부재
-
-MPC는 모델의 작은 오차에도 쉽게 불안정해지는 제어기다.  
-하지만 우리 환경에서는 다음과 같은 핵심 파라미터를 **정확히 알 방법이 없었다.**
-
-- 타이어 cornering stiffness  
-- 관성모멘트 \( I_{zz} \)  
-- 실제 조향 응답, 가속·감속 응답 특성  
-
-이 값들은 문서로 제공되지 않았고, 이를 실험적으로 추정할 수 있는 설비와 시간도 부족했다.  
-즉,
-
-> “모델이 있어야 쓸 수 있는 제어기”임에도,  
-> **신뢰할 수 있는 모델을 만들 수 있는 조건이 아니었다.**
-
-#### 2) 비용함수(cost function) 설계의 난관
-
-MPC가 요구하는 **비용함수(Q, R 가중치)** 설계도 큰 난관이었다.
-
-- MATLAB 예제에서는 이미 잘 튜닝된 가중치가 제공되지만,  
-- 실차 환경에서는 모든 Q·R을 **처음부터 직접 설정**해야 했다.
-
-그러나 모델이 정확하지 않으니:
-
-- 어떤 Q·R 조합도 이론과 실제 사이에서 일관되게 작동하지 않았고,
-- 튜닝의 기준점 자체가 부족한 상황이었다.
-
-결과적으로,
-
-> MPC는 **이론적으로는 매우 강력하고**,  
-> 구현 자체도 코드 레벨에서는 가능했지만,  
-> **학부 수준 장비와 환경에서 “대회용 안정성”을 확보하기에는 한계가 명확했다.**
-
-이에 우리는 MPC를 최종 제어기로 채택하지 않고,  
-보다 **강건하고 실시간성이 확보되는 방식**으로 방향을 전환하게 되었다.
-
----
-
-### 14.2 최종 선택: SLAM 위치 + Global waypoint + Pure Pursuit
-
-<img src="images/control14.png" width="450" alt="SLAM + Waypoint + Pure Pursuit"/>
-
-정리하자면, 우리가 직면한 제약은 다음과 같았다.
-
-- **Stanley**  
-  → QLabs의 Depth 카메라 버그로 인해 **실행 자체가 불가능**  
-- **MPC**  
-  → 차량 모델 파라미터 정확도 부족으로 인해 **실용적인 안정성 확보가 어려움**
-
-그 결과, 현실적으로 남은 선택지는 단 하나였다.
-
-1. SLAM이 제공하는 **비교적 안정적인 차량 현재 위치**
-2. 대회 트랙에 대해 **사전에 정의한 정적 waypoint 맵**
-
-이 두 정보를 활용하면서도 **안정적으로 동작하는 제어기**,  
-바로 **Pure Pursuit**였다.
-
-Pure Pursuit의 장점은 우리가 가진 환경과 완벽히 부합했다.
-
-- 정밀한 3D 차선 정보가 필요 없고  
-- 복잡한 고차 동역학 모델이 없어도 되며  
-- **look-ahead point** 만으로 안정적인 조향이 가능하고  
-- 계산량이 적어 **실시간성이 뛰어나다**
-
-즉, 우리의
-
-- 센싱 환경,  
-- 모델링 정확도,  
-- 시뮬레이터 제약,  
-- 대회 규칙
-
-을 모두 고려했을 때,  
-**Pure Pursuit는 가장 단순하면서도 가장 안정적으로 주행 가능한 유일한 선택**이었다.
-
----
-
-### 14.3 Pure Pursuit의 문제점과 우리가 선택한 해결책
-
-그러나 Pure Pursuit 역시 **구조적인 한계**가 있었고,  
-실제 주행 과정에서 다음 두 가지 문제가 반복적으로 나타났다.
-
-#### 1) 직선 구간에서의 흔들림(Oscillation)
-
-직선 구간에서:
-
-- 아주 작은 오차도 과도한 조향으로 반영되며,
-- 핸들이 좌우로 흔들리는 진동 현상이 발생했다.
-
-**해결 전략**
-
-우리는 트랙 전체를 **직선 / 곡선 구간으로 분리**하고,  
-waypoint 맵에 **구간 타입 정보**를 포함시켰다.
-
-- **직선 구간에서는**  
-  - Look-ahead distance를 크게 설정  
-  - Steering saturation(최대 조향각 제한)을 강화  
-
-를 적용해,  
-불필요한 조향을 억제하고 **안정적인 직선 주행**을 확보했다.
-
-#### 2) 곡선 구간에서의 안쪽 침투(Inside Drift)
-
-곡선 구간에서는:
-
-- Look-ahead가 너무 길면 경로를 **직선에 가깝게 추종**하는 경향이 생기고,
-- 그 결과 차량이 커브 안쪽으로 말리는 현상이 나타났다.
-- 속도가 높을수록 언더스티어와 saturation이 쉽게 발생했다.
-
-**해결 전략**
-
-- **곡선 구간에서는**  
-  - Look-ahead distance를 짧게 설정  
-  - Target velocity(목표 속도)를 낮게 설정  
-
-을 통해:
-
-- 곡률 변화에 더 빠르게 반응하고,  
-- 무리 없는 조향 여유를 확보하도록 했다.
-
-이렇게 **구간 타입(직선/곡선)에 따라 서로 다른 튜닝을 적용한 Pure Pursuit**는,
-
-- 직선에서의 진동 문제와  
-- 곡선에서의 안쪽 침투 문제를 모두 해결했으며,  
-
-테스트 결과 **waypoint를 정확하게 추종하는 것**을 확인할 수 있었다.  
-이 과정에서 **waypoint 자체의 전처리와 맵 구조 설계가 얼마나 중요한지**가 더욱 부각되었다.
-
----
-
-### 14.4 결론 – 여러 실패 끝에 얻은 가장 현실적인 해답
-
-여러 제어기를 실험하고, 실패하고, 다시 시도하는 과정을 거치며  
-우리는 다음 사실을 받아들여야 했다.
-
-- **Depth 버그**로 인해 Stanley 기반 구조는 **실현 불가능**했고  
-- 정확한 동역학 파라미터 부족으로 MPC는 **신뢰도 있게 작동하기 어려웠으며**  
-- **SLAM 위치 + 트랙 waypoint** 만으로도 안정적으로 작동하는 제어기는  
-  **Pure Pursuit뿐이었다**
-
-따라서 최종적으로 우리는 **Pure Pursuit 기반 제어 구조**를 채택했다.  
-이 결정은 단순히
-
-> “가장 간단해 보여서”
-
-내린 선택이 아니라,
-
-> **대회 환경에서 실제 차량을 가장 안정적으로 움직일 수 있는,  
-> 유일하고 현실적인 선택이었다.**
-
-여러 제어 이론과 구현을 직접 부딪혀 본 끝에,  
-우리가 가진 조건 안에서 **“정말로 끝까지 책임질 수 있는 제어기”** 가 무엇인지를 선택한 결과가  
-바로 이 Pure Pursuit였다.
-
-하지만 Pure Pursuit는 어디까지나 경로를 ‘따라가는’ 제어기일 뿐,
- 스스로 어디로 가야 하는지, 또는 어떤 waypoint를 생성해야 하는지는 알지 못한다.
- 따라서 앞으로는
-- RRT를 이용한 경로 생성
-- DQN을 활용한 경로 선택(의사결정)
-과 같은 모듈을 상위 계층에 추가하여, Pure Pursuit가 따라갈 완전한 경로·전략을 구현하기로 결정하였다.
 
 ---
 
