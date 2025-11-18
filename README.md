@@ -1126,7 +1126,8 @@ Stanley는 실패했지만,
 
 ---
 
-## 13. 제어의 진화 – Pure Pursuit, 그리고 MPC
+## [13. 제어의 진화 – Pure Pursuit, 그리고 MPC](Product/Localization/)
+<img src="images/local2.jpg" width="450" alt="SLAM Trajectory with Noise and Stabilization"/>
 
 Depth 카메라 버그로 인해 Stanley 제어기가 불가능해지자, 우리는 다음 대안으로 **MPC(Model Predictive Control)**을 검토했다.
 
@@ -1180,7 +1181,7 @@ MPC는 Q, R 가중치 설계가 핵심이다.
 ---
 
 ### 13.2 최종 선택: Pure Pursuit + Global Waypoints + Localization
-
+<img src="images/control14.png" width="450" alt="SLAM + Waypoint + Pure Pursuit"/>
 정리하면:
 
 - Stanley → Depth 버그로 실행 불가  
