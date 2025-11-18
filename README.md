@@ -1368,7 +1368,7 @@ waypoint 맵에 **구간 타입 정보**를 포함시켰다.
 
 ---
 
-## [15. Path Planning – Combining RRT and DQN](Product/Decision/path%20planning/)
+## [15. Path Planning – Combining RRT and DQN](Product/Decision/Path%20Planning/)
 
 <img src="images/rrt1.png" width="450" alt="RRT Exploration and Global Path Skeleton"/>
 <img src="images/rrt10.png" width="450" alt="Global Path and PH-Based Avoidance Paths"/>
