@@ -1179,32 +1179,7 @@ This approach is not as elegant as a Kalman Filter and does reduce positional re
 
 ---
 
-## 14. Path Planning – Combining RRT and DQN
-
-<img src="images/rrt1.png" width="450" alt="RRT Exploration and Global Path Skeleton"/>
-<img src="images/rrt10.png" width="450" alt="Avoidance Paths – PH-Based Offset Around Obstacles"/>
-Once we could localize ourselves accurately, the next question was:
-
-> “How do we generate a path?”
-
-Because our track was a **closed environment**, we applied **RRT (Rapidly-Exploring Random Tree)** to sample free space and generate global paths.
-
-However, the taxi mission required more than continuous driving. The vehicle had to visit multiple pick-up and drop-off points in sequence:
-
-> “Even on the same track, in what order should we visit locations to be most efficient?”
-
-RRT is powerful for exploring space but not suited for **sequence optimization**. To address this, we integrated **DQN (Deep Q-Network)**-based reinforcement learning.
-
-Our hybrid strategy was:
-
-- RRT: explore free space and propose feasible path segments.  
-- DQN: learn the order of visiting waypoints to minimize travel distance and time.
-
-Through this combination, we constructed a conceptual **autonomous taxi service**, not just a simple autonomous vehicle.
-
----
-
-## 15. 제어의 진화 – Pure Pursuit, 그리고 MPC
+## 14. 제어의 진화 – Pure Pursuit, 그리고 MPC
 
 <img src="images/control19.gif" width="450" alt="Control Stack – Pure Pursuit and MPC"/>
 
@@ -1216,7 +1191,7 @@ MATLAB에서 제공하는 여러 경로 추종 예제를 분석하는 과정에�
 
 ---
 
-### 15.1 다른 길을 찾다: MPC(Model Predictive Control) 테스트
+### 14.1 다른 길을 찾다: MPC(Model Predictive Control) 테스트
 
 실제로 MPC는:
 
@@ -1265,7 +1240,7 @@ MPC가 요구하는 **비용함수(Q, R 가중치)** 설계도 큰 난관이었�
 
 ---
 
-### 15.2 최종 선택: SLAM 위치 + 트랙 waypoint + Pure Pursuit
+### 14.2 최종 선택: SLAM 위치 + 트랙 waypoint + Pure Pursuit
 
 <img src="images/control14.png" width="450" alt="SLAM + Waypoint + Pure Pursuit"/>
 
@@ -1303,7 +1278,7 @@ Pure Pursuit의 장점은 우리가 가진 환경과 완벽히 부합했다.
 
 ---
 
-### 15.3 Pure Pursuit의 문제점과 우리가 선택한 해결책
+### 14.3 Pure Pursuit의 문제점과 우리가 선택한 해결책
 
 그러나 Pure Pursuit 역시 **구조적인 한계**가 있었고,  
 실제 주행 과정에서 다음 두 가지 문제가 반복적으로 나타났다.
@@ -1356,7 +1331,7 @@ waypoint 맵에 **구간 타입 정보**를 포함시켰다.
 
 ---
 
-### 15.4 결론 – 여러 실패 끝에 얻은 가장 현실적인 해답
+### 14.4 결론 – 여러 실패 끝에 얻은 가장 현실적인 해답
 
 여러 제어기를 실험하고, 실패하고, 다시 시도하는 과정을 거치며  
 우리는 다음 사실을 받아들여야 했다.
@@ -1382,7 +1357,7 @@ waypoint 맵에 **구간 타입 정보**를 포함시켰다.
 
 ---
 
-## 16. 경로 계획 – RRT와 DQN의 결합
+## 15. 경로 계획 – RRT와 DQN의 결합
 
 <img src="images/rrt1.png" width="450" alt="RRT Exploration and Global Path Skeleton"/>
 <img src="images/rrt10.png" width="450" alt="Global Path and PH-Based Avoidance Paths"/>
@@ -1406,7 +1381,7 @@ SLAM을 통해 차량의 위치를 지도 좌표계에서 안정적으로 얻을
 
 ---
 
-### 16.1 문제 정의 – “제한 시간 내에 택시를 가장 효율적으로 움직이려면?”
+### 15.1 문제 정의 – “제한 시간 내에 택시를 가장 효율적으로 움직이려면?”
 
 Quanser ACC 대회의 메인 미션은 **도시형 트랙 내에서 택시를 운용**하는 것이었다.  
 대회 측은 5분 동안 수행해야 하는 공식 Ride 리스트(A, B, C … T)를 제공했으며,  
@@ -1431,7 +1406,7 @@ Quanser ACC 대회의 메인 미션은 **도시형 트랙 내에서 택시를 �
 
 ---
 
-### 16.2 왜 RRT를 선택했는가 – ‘경로 생성기’로서의 역할
+### 15.2 왜 RRT를 선택했는가 – ‘경로 생성기’로서의 역할
 
 트랙은 다음과 같은 요소를 포함한 복잡한 **연속 공간(Continuous Space)** 구조였다.
 
@@ -1469,7 +1444,7 @@ RRT는:
 
 ---
 
-### 16.3 RRT 적용 방식 – 오프라인, 구간 분할, 그리고 스무딩
+### 15.3 RRT 적용 방식 – 오프라인, 구간 분할, 그리고 스무딩
 
 #### 1) 왜 RRT를 오프라인에서 돌렸는가?
 
@@ -1524,7 +1499,7 @@ RRT는 강력하지만, 무작위 샘플링 특성 때문에 다음과 같은 �
 
 ---
 
-### 16.4 Directed Graph로의 변환 – 자료구조·알고리즘 수업의 재해석
+### 15.4 Directed Graph로의 변환 – 자료구조·알고리즘 수업의 재해석
 
 RRT로부터 얻은 Global Path는 **연속적인 좌표들의 집합**이다.  
 그러나 택시 문제를 풀기 위해서는 단순히 경로를 따라 가는 것만으로는 부족했다.
@@ -1554,7 +1529,7 @@ RRT로부터 얻은 Global Path는 **연속적인 좌표들의 집합**이다.
 
 ---
 
-### 16.5 왜 DQN인가 – Ride 순서 최적화 문제
+### 15.5 왜 DQN인가 – Ride 순서 최적화 문제
 
 Directed Graph가 준비되면,  
 두 노드 간 최단 경로는 학부 수업에서 배운 **Dijkstra / BFS / DFS** 와 같은 기존 알고리즘으로 충분히 계산 가능하다.
@@ -1611,7 +1586,7 @@ DQN을 선택한 이유는 다음과 같다.
 
 ---
 
-### 16.6 왜 실시간이 아니라 오프라인 DQN인가 – 운영 전략으로의 전환
+### 15.6 왜 실시간이 아니라 오프라인 DQN인가 – 운영 전략으로의 전환
 
 초기에는 DQN을 **실시간으로 실행**하여,  
 경유해야 하는 경유지의 노드 번호를 넣고 **경로의 순서를 계산하는 방식**을 시도했다.  
@@ -1636,7 +1611,7 @@ Ride는 5분 동안 여러 개를 수행해야 했기 때문에,
 
 ---
 
-### 16.7 최종 구조 정리 – RRT, Directed Graph, DQN의 역할
+### 15.7 최종 구조 정리 – RRT, Directed Graph, DQN의 역할
 
 이제 RRT, Directed Graph, DQN 각각이 어떤 역할을 했는지 정리하면,  
 최종 구조는 다음과 같다.
@@ -1650,7 +1625,7 @@ Ride는 5분 동안 여러 개를 수행해야 했기 때문에,
 
 ---
 
-### 16.8 이 섹션이 프로젝트 전체에서 갖는 의미
+### 15.8 이 섹션이 프로젝트 전체에서 갖는 의미
 
 경로 계획 파트에서 우리는:
 
@@ -1671,7 +1646,7 @@ Ride는 5분 동안 여러 개를 수행해야 했기 때문에,
 
 ---
 
-## 17. Avoidance Maneuver – TDM + TG–PH Hybrid Framework
+## 16. Avoidance Maneuver – TDM + TG–PH Hybrid Framework
 
 <table>
   <tr>
@@ -1712,7 +1687,7 @@ Our system, however, did not have this second stage. We could brake hard, but no
 
 This marked the beginning of our work on **avoidance maneuvers**.
 
-### 17.1 Problem 1 – The Vehicle Cannot Decide *When* and *Where* to Avoid
+### 16.1 Problem 1 – The Vehicle Cannot Decide *When* and *Where* to Avoid
 
 The first deficiency was conceptual:
 
@@ -1745,7 +1720,7 @@ In other words, TDM provides a systematic framework for answering:
 
 However, deciding that avoidance is necessary does not specify **how** to avoid.
 
-### 17.2 Problem 2 – Even After Deciding to Avoid, the Vehicle Lacks a Concrete Path
+### 16.2 Problem 2 – Even After Deciding to Avoid, the Vehicle Lacks a Concrete Path
 
 After implementing TDM, the vehicle could logically conclude:
 
@@ -1778,7 +1753,7 @@ We therefore decided to **separate the tasks** of:
 1. deciding **how much to shift (offset)**, and  
 2. describing **how to move along that offset (curve)**.
 
-### 17.3 A Second Clue from PH Curves – Avoiding “Unnecessary Motion”
+### 16.3 A Second Clue from PH Curves – Avoiding “Unnecessary Motion”
 
 We turned to another paper:
 
@@ -1813,7 +1788,7 @@ This yields an avoidance path that:
 - precisely reflects the required offset, and  
 - remains free of unnecessary oscillations.
 
-### 17.4 Reconstructing Two Papers into a Single Framework
+### 16.4 Reconstructing Two Papers into a Single Framework
 
 We combined these concepts into a three-step hybrid framework:
 
@@ -1835,7 +1810,7 @@ By separating **decision**, **offset**, and **trajectory**, we were able to:
 - quantify how far to move sideways, and
 - generate a smooth path that minimally disrupts the original waypoint flow (PH).
 
-### 17.5 What We Ultimately Built
+### 16.5 What We Ultimately Built
 
 The crucial point is that we did not simply “chain two papers together.” We:
 
@@ -1859,7 +1834,7 @@ By reinterpreting and connecting these concepts, we strengthened our capability 
 
 ---
 
-## 18. Conclusion and Achievements
+## 17. Conclusion and Achievements
 
 <table>
   <tr>
@@ -1953,7 +1928,7 @@ Every step forward started from the question:
 
 ---
 
-## 19. Summary
+## 18. Summary
 
 The KDAS2025 project evolved from simple simulation-based control experiments into a **fully integrated AI-driven autonomous vehicle system**.
 
