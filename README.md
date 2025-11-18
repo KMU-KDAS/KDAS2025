@@ -339,70 +339,155 @@ Most importantly, we implemented the entire pipeline—from modeling to visualiz
 
 ---
 
-## 6. Dynamics Modeling – `AEB_Dynamics` & `QCar_Dynamics`
+## 6. 동역학 모델링 – `AEB_Dynamics` & `QCar_Dynamics`
 
 <img src="images/control18.gif" width="450" alt="Vehicle Dynamics – Longitudinal/Lateral Modeling"/>
 
-Our motivation for vehicle dynamics modeling was not limited to computing braking points for AEB. To increase the reliability of sensor-based systems such as **SLAM** and **MPC**, we needed a mathematical prediction model that could verify whether sensor outputs were physically plausible and correct them when necessary.
+여러 제어 구조를 실험할수록 한 가지 의문이 반복해서 떠올랐다.  
+센서가 말해주는 값만으로는 차량의 움직임을 온전히 제어할 수 없다는 점이었다.  
+하지만 자율주행 알고리즘은 결국,
 
-In other words, we sought to understand **“how the vehicle actually moves”** at a fundamental physical level, beyond what sensors merely report.
+> “지금 넣은 조향·가속 입력이 앞으로 어떤 움직임을 만들 것인가?”
 
-### 6.1 Modeling Direction
+를 전제로 한다.  
+즉, 센서가 말하는 **현재의 관측값** 위에,  
+차량이 실제로 **어떻게 움직일 수 있는지에 대한 예측적 이해**가 필요했다.  
+이 고민에서 동역학 모델링이 시작되었다.
 
-The primary objective of our modeling was to represent vehicle speed and its braking/acceleration behavior in a physically valid manner.
+---
 
-Instead of implementing every equation from scratch, we decided it would be more efficient and robust to leverage MATLAB’s built-in **Bicycle Vehicle Model**. This block can express full 3DOF vehicle motion—longitudinal (x), lateral (y), and vertical (z).
+### 6.1 첫 번째 모델 – Bicycle Model을 통해 이해한 ‘차가 움직이는 방식’
 
-However, our experimental environment was a flat track without slopes. The vertical axis (z) would add complexity without contributing meaningful effects. Thus, we adopted a **2DOF (x–y plane)** model and built our dynamics block around it.
+초기 단계에서는 MATLAB의 **Bicycle Vehicle Model**을 활용했다.  
+이 모델은 일반적인 가솔린 차량의 거동을 기반으로 만들어져 있으며,
 
-The Bicycle Vehicle Model is based on a **single-track representation**, where the front and rear wheels are each merged into a single representative wheel. On top of this structure, we integrated:
+- 타이어–지면 상호작용,
+- 차량의 기본 종·횡 방향 동역학
 
-- Pacejka’s **Magic Formula**,  
-- **longitudinal slip** modeling, and  
-- friction–velocity relationships
+을 이해하기에 좋은 참고 구조였다.
 
-to model realistic vehicle behavior.
+우리가 이 모델을 사용한 이유는 단순했다.
 
-As a result, the speed and acceleration profiles generated in simulation could be aligned with physical intuition and sensor readings.
+- 이미 검증된 물리 모델이었고  
+- 동역학 블록 구조를 빠르게 이해할 수 있었고  
+- “차량이 어떤 원리로 움직이는지”를 학습하기에 적절했기 때문이다.
 
-### 6.2 Reconstructing a QCar-Specific Model
+또한 우리의 실험 환경은 **평면 트랙**이었기 때문에,  
+3DOF 중 z축(상하 방향) 거동은 제외하고,  
+x–y 평면에 집중한 **2DOF 구성**으로 단순화해 사용했다.
 
-After the preliminary phase, our actual test platform was Quanser’s **QCar**, which differs significantly from a conventional gasoline vehicle:
+다만 이 모델은 근본적으로 **풀사이즈 가솔린 차량**을 기준으로 만들어져 있었다.  
+그래서 “차량 물리의 개념을 배우는 데는 적합했지만,  
+실제로 우리가 제어해야 할 **QCar의 거동과는 거리가 있었다.**”
 
-- It uses a **BLDC motor** and **ESC (Electronic Speed Controller)** as actuators.
-- It has **no mechanical braking system**.
-- It is a **1/10-scale platform** with much smaller mass, inertia, and aerodynamic effects.
+이 지점이, 우리가 **QCar 전용 동역학 모델(QCar_Dynamics)** 을 따로 구성하게 된 출발점이었다.
 
-Therefore, the default Bicycle Model alone could not offer sufficiently accurate predictions.
+---
 
-We explicitly introduced the longitudinal equation of motion:
+### 6.2 왜 QCar Dynamics를 다시 만들었는가 – 플랫폼이 바뀌면 물리식도 바뀐다
 
-$$
-m\dot{v}_x = \sum F_t - F_{\text{roll}} - F_{\text{aero}} - mg \sin\theta
-$$
+Quanser의 **QCar**는 일반 차량과 구조가 크게 다르다.
 
-and added a motor torque model consistent with QCar’s actuation:
+- BLDC 모터 + ESC 기반 구동
+- 기계식 브레이크 없음
+- 1/10 스케일 특유의 저질량·저속 플랫폼
+- 굴림 저항과 모터 응답이 훨씬 크게 체감됨
 
-$$
-T_m = k_t I_m = k_t \frac{V_{\text{duty}} - k_e \omega_m}{R}
-$$
+이런 구조적 차이 때문에,  
+기존 Bicycle Model만으로는 QCar의 **속도 변화, 감속 패턴, 슬립 현상**을 제대로 설명할 수 없었다.
 
-This model describes the physical pathway:
+그래서 우리는 QCar의 실제 거동을 설명하기 위해  
+여러 물리식을 다시 검토하고, 그중에서
 
-> ESC duty command → motor torque → vehicle speed
+> “QCar의 움직임을 결정하는 데 꼭 필요한 관계식”
 
-In simulation, this reconstruction reproduced QCar’s deceleration and response characteristics realistically, forming the basis for later controller designs and parameter tuning.
+만을 선별해 **QCar_Dynamics** 블록을 별도로 구성했다.
 
-### 6.3 Significance of the Dynamics Model
+---
 
-Dynamics modeling here was not just about creating a simulation block. High-level control structures such as SLAM and MPC can only be trusted if their underlying physical models are consistent and well understood.
+### 6.3 QCar용 물리식을 고른 기준 – ‘예측 가능한 거동’을 만들기 위해
 
-With our dynamics model, we gained a mathematical foundation to:
+QCar Dynamics를 만들기 위해 검토한 물리식은 많았지만,  
+우리가 원하는 것은 “모든 물리 현상”이 아니라
 
-- correct sensor data, and  
-- generate predictively stable control signals.
+> 다음 움직임을 이해하는 데 필수적인 관계식
 
-In this sense, the vehicle model served as a **bridge between perception and control**—a medium that translates physical reality into mathematics.
+이었다. 핵심 기준은 다음 세 가지였다.
+
+#### ① ESC Duty → 전압 → 전류 → 모터 토크 → 바퀴 회전 → 차량 속도
+
+QCar에서 가장 중요한 특성은,  
+**속도 변화가 ESC Duty 변화에 거의 직결된다는 점**이다.
+
+따라서 이 전달 경로를 모델에 포함시키는 것은 필수였다.  
+이 관계가 없으면 “왜 속도가 변하는지”를 해석할 수 없기 때문이다.
+
+#### ② 감속은 브레이크가 아니라 ‘저항’으로 발생
+
+QCar에는 별도의 브레이크가 없다.  
+따라서 감속은
+
+- 모터 역토크,
+- 굴림저항,
+- 공기저항
+
+의 조합으로 설명된다.  
+이 요소들을 포함해야만, SLAM·회피 기동·제어기가 사용하는 속도값이  
+**“물리적으로 가능한 범위인지”** 판단할 수 있다.
+
+#### ③ 저질량 플랫폼 특성상, 작은 슬립도 오차를 키운다
+
+1/10 스케일 저질량 플랫폼에서는  
+작은 슬립도 실제 속도와 센서가 보는 속도 사이에 의미 있는 차이를 만든다.  
+그래서 슬립은 완전히 무시하기보다는,  
+단순화된 형태로라도 모델에 포함시키는 것이 필요했다.
+
+여기서 언급한 것들은 전체 모델의 일부에 불과하지만,  
+공통점은 하나다.
+
+> “QCar가 실제로 어떻게 움직이는지”를 설명하는 데 꼭 필요한 요소들만 선별했다는 점.
+
+이 방식을 통해 우리는
+
+- 불필요한 복잡성은 지우면서도  
+- **다음 입력에서 차량이 어떻게 반응할지 예측 가능한 구조**를 만들 수 있었다.
+
+---
+
+### 6.4 동역학 모델이 만들어준 것 – ‘다음 움직임을 이해할 수 있는 기반’
+
+동역학 모델링은 단순히
+
+> “시뮬레이션을 더 정교하게 만드는 작업”
+
+이 아니었다.
+
+이 모델을 통해 우리는 처음으로,
+
+- 우리가 넣은 조향·가속 명령이  
+  다음 순간 어떤 속도·위치 변화를 만들 수 있는지,
+- ESC Duty 변화가 실제 속도 변화에  
+  어느 정도 비율로 반영되는지,
+
+를 **물리식으로 설명할 수 있게** 되었다.
+
+즉, 동역학 모델은
+
+> 센서가 말해주는 “현재 값” 위에  
+> “차량이 다음에 어떻게 움직일 수 있는지”를 그려볼 수 있게 해주는  
+> **예측적 사고의 출발점**
+
+이었다.
+
+이 물리적 이해는 이후에 설계한
+
+- SLAM 기반 위치 추정,  
+- MPC와 같은 고급 제어기,  
+- AEB 및 회피 기동 알고리즘
+
+을 구성하는 데 있어 **공통의 기반**이 되었다.  
+센서 값만 바라보던 시스템에서,  
+“다음 움직임을 스스로 예측할 수 있는 시스템”으로 나아가는 첫 단계가 바로 이 **동역학 모델링**이었다.
 
 ---
 
@@ -588,7 +673,33 @@ In the end, YOLOv8s became a practical module that **directly enabled decisions*
 
 ---
 
-## 10. After Perception – “We See the Lane. Now How Do We Drive?”
+## 10. Simulator Constraints & Early Control – Xytron Preliminary Stage
+
+<img src="images/SCNN1.gif" width="450" alt="Xytron Simulator – Lane Following with SCNN + PID"/>
+
+The preliminary round (Xytron) was held entirely in a simulator, but with **severely limited sensors**:
+
+- 180° front LiDAR, and  
+- a single RGB camera.
+
+SLAM and waypoint-based planning were not available. We had to design a system that essentially **“drives based only on what it sees”**.
+
+At that time, we implemented a lightweight driving algorithm combining:
+
+- **SCNN-based lane detection**, and  
+- a **PID controller**.
+
+We used the front camera image to detect lane centers, defined the pixel offset between image center and lane center as steering error, and fed that error into a PID controller. This formed a simple vision-based feedback loop for steering.
+
+At low speeds, the vehicle drove reasonably stably. However, as speed increased, oscillations and overshoot became severe. Gain tuning alone could not guarantee consistent high-speed performance.
+
+This experience clearly demonstrated the limitations of simple **pixel-offset-based lane centering**.
+
+These lessons directly shaped our next steps in the Quanser phase. With access to SLAM-based pose estimation and waypoint-based planning, our control design evolved through **Stanley**, **Pure Pursuit**, and finally **MPC**, transitioning from simple offset compensation to fully trajectory-aware control.
+
+---
+
+## 11. After Perception – “We See the Lane. Now How Do We Drive?”
 
 <img src="images/SCNN10.gif" width="450" alt="Lane Mask to Waypoint Conceptual Transition"/>
 
@@ -606,7 +717,7 @@ We reasoned as follows:
 
 This led us to the widely used concept of **waypoints** in autonomous driving: generating points along the lane center and connecting them into a drivable path.
 
-### 10.1 Depth-Based Waypoint Generation – and Its Structural Limits
+### 11.1 Depth-Based Waypoint Generation – and Its Structural Limits
 
 To generate waypoints, we must convert pixel coordinates into real-world coordinates (x, y). A natural idea was to use a **depth camera** and map SCNN’s pixel outputs to metric coordinates.
 
@@ -622,7 +733,7 @@ In other words, the depth sensor was **unusable** for real-time coordinate conve
 
 This was more than a sensor choice issue; it meant that our entire approach did not structurally fit the QLabs environment.
 
-### 10.2 A More Important Lesson – Waypoints Are an “Language,” Not Just Points
+### 11.2 A More Important Lesson – Waypoints Are an “Language,” Not Just Points
 
 Depth was not the only problem. We realized something deeper: even if depth had worked perfectly, the waypoints we were generating would have been unsuitable for control.
 
@@ -636,7 +747,7 @@ From the controller’s perspective, this is not a **trackable path** but a **co
 
 From this experience, we learned that **waypoints are not just points but a structural “language” for expressing stable, drivable paths**. Unless this language is used correctly, even the best perception or control algorithms cannot produce stable vehicle motion.
 
-### 10.3 Our Conclusion from This Failure
+### 11.3 Our Conclusion from This Failure
 
 Seeing the lane is only the beginning of perception and does not automatically produce drivable behavior.
 
@@ -661,8 +772,122 @@ The question,
 was not merely a technical issue. It taught us that perception outputs must be **translated into the “language of paths”**—a comprehensive reasoning process in its own right.
 
 ---
+## 12. 궤적 추종 제어의 시작 – Stanley Controller
 
-## 11. Localization and Stabilization – SLAM + Kalman Filter
+Xytron 대회에서 차량을 처음 실제로 움직여 보았을 때,  
+우리는 **PID 제어기의 한계를 뼈저리게 체감**했다.
+
+- 직선에서는 어느 정도 정상적으로 주행했지만  
+- 코너에 들어서는 순간 **진동**, **오버슈트**, **언더슈트**가 반복되었고  
+- 차량은 안정적인 궤적을 유지하지 못했다.
+
+그때 우리는 분명히 알 수 있었다.
+
+> “단순 피드백만으로는 자율주행을 만들 수 없다.”
+
+PID를 넘어선 보다 구조적인 제어 방식이 필요했다.  
+그때 가장 먼저 떠올린 것이 바로 **Stanley 제어기**였다.
+
+---
+
+### 12.1 Stanley를 위한 첫 설계: SCNN + Depth 기반 3D Waypoint
+
+<img src="images/control5.png" width="450" alt="SCNN + Depth 기반 Stanley 구조"/>
+
+Stanley를 우선 고려한 이유는 명확했다.
+
+- Stanley는 **2005 DARPA Grand Challenge 우승 차량에 실제 사용된 제어기**이며  
+- 센서 기반 waypoint 추종, 고속 안정성 측면에서 이미 검증되었고  
+- 우리가 만들고자 하는 **센서 기반 실시간 자율주행 구조**와 매우 잘 맞았다.
+
+특히 Stanley는 다음 두 값을 기반으로 조향을 보정한다.
+
+- 횡오차 (**cross-track error**)  
+- 헤딩 오차 (**heading error**)  
+
+PID보다 훨씬 안정적이고 **기하학적으로 정당한 조향 응답**을 만든다.
+
+하지만 Stanley가 제대로 작동하기 위해 필요한 조건이 있었다:
+
+> **정확한 3D 차선 경로(waypoint)가 있어야 한다는 것.**
+
+이를 위해 우리는 아래와 같은 구조를 설계했다.
+
+1. **SCNN으로 차선 마스크 검출**  
+2. **Depth 카메라로 각 픽셀의 실제 거리 추정**  
+3. **두 정보를 결합해 3D waypoint 생성**  
+4. **생성된 waypoint를 Stanley 제어기의 입력으로 사용**
+
+이 파이프라인이 제대로 작동한다면,  
+Stanley는 이론적으로도, 실전에서도 가장 강력한 조향 제어기가 될 수 있었다.
+
+---
+
+### 12.2 예상 밖의 장애물 – Depth 카메라 버그로 인한 “전면 중단”
+
+그러나 실험 과정에서 **결정적인 문제**가 발생했다.
+
+> QLabs Depth 카메라가 시스템 버그로 인해  
+> 올바른 depth 값을 제공하지 않았던 것이다.
+
+실제 출력된 값은:
+
+- 0  
+- 무한대(∞)  
+- 랜덤 노이즈  
+- 프레임마다 불규칙한 값 변화  
+
+즉, **실제 거리 정보를 완전히 잃은 상태**였다.
+
+Depth 카메라 없이는:
+
+- SCNN의 픽셀 좌표를  
+- 실제 월드 좌표(3D waypoint)로  
+- 변환할 수 없다.
+
+그 말은 곧:
+
+> 우리가 준비한 **Stanley 기반 제어 구조는 초기 단계에서 완전히 중단**될 수밖에 없었다는 의미였다.
+
+---
+
+### 12.3 다음 단계: Waypoint 생성을 위해 Localization에 집중하다
+
+Stanley를 사용하려면 3D waypoint가 필요하고,  
+3D waypoint를 만들려면 Depth가 반드시 필요했다.  
+하지만 Depth가 **구조적으로 불가능한 환경**이었다.
+
+따라서 우리는 전략을 재정비했다.
+
+> **Depth 기반 waypoint → 불가능**  
+> **Localization 기반 waypoint → 가능**
+
+즉,  
+Depth로부터 좌표를 얻는 대신,
+
+- SLAM을 통해 차량의 위치를 안정적으로 추정하고  
+- 트랙 전체의 전역 waypoint를 기준으로  
+- 해당 위치에서 가장 가까운 waypoint를 추종하는 방식으로 전환했다.
+
+이 결정은 이후 Pure Pursuit 선택과 SLAM–Waypoint 기반 구조 설계의  
+핵심 기반이 되었다.
+
+---
+
+### 12.4 요약
+
+- PID는 곡률 변화에 취약하여 실전에서 불안정  
+- Stanley는 이론적으로 가장 강력한 선택  
+- SCNN + Depth로 Stanley에 필요한 3D waypoint를 만들 계획이었음  
+- 하지만 **QLabs Depth 버그 → 3D waypoint 생성 불가 → Stanley 중단**  
+- 이후 시스템 구조를 **SLAM–waypoint 기반**으로 재구성하게 됨
+
+Stanley는 실패했지만,  
+이 실패는 이후 가장 현실적인 제어 구조를 찾는 중요한 출발점이 되었다.
+
+---
+
+## 13. Localization and Stabilization – SLAM + Kalman Filter
 
 <img src="images/local2.jpg" width="450" alt="SLAM Trajectory with Noise and Stabilization"/>
 
@@ -714,9 +939,10 @@ Thus, we decided to **truncate** SLAM coordinates to one decimal place, effectiv
 
 This approach is not as elegant as a Kalman Filter and does reduce positional resolution. However, it significantly suppressed overreactions in control and produced **stable and consistent behavior** in real driving.
 
+
 ---
 
-## 12. Path Planning – Combining RRT and DQN
+## 14. Path Planning – Combining RRT and DQN
 
 <img src="images/rrt1.png" width="450" alt="RRT Exploration and Global Path Skeleton"/>
 <img src="images/rrt10.png" width="450" alt="Avoidance Paths – PH-Based Offset Around Obstacles"/>
@@ -741,95 +967,474 @@ Through this combination, we constructed a conceptual **autonomous taxi service*
 
 ---
 
-## 13. Simulator Constraints & Early Control – Xytron Preliminary Stage
+## 15. 제어의 진화 – Pure Pursuit, 그리고 MPC
 
-<img src="images/SCNN1.gif" width="450" alt="Xytron Simulator – Lane Following with SCNN + PID"/>
+<img src="images/control19.gif" width="450" alt="Control Stack – Pure Pursuit and MPC"/>
 
-The preliminary round (Xytron) was held entirely in a simulator, but with **severely limited sensors**:
+Stanley 제어기의 적용이 어려워지자, 우리는 자연스럽게 다음 대안으로 **MPC(Model Predictive Control)** 를 검토하게 되었다.  
+MATLAB에서 제공하는 여러 경로 추종 예제를 분석하는 과정에서, 복잡한 종·횡 통합 제어 문제에서 MPC가 자주 등장한다는 점을 확인했기 때문이다.  
 
-- 180° front LiDAR, and  
-- a single RGB camera.
-
-SLAM and waypoint-based planning were not available. We had to design a system that essentially **“drives based only on what it sees”**.
-
-At that time, we implemented a lightweight driving algorithm combining:
-
-- **SCNN-based lane detection**, and  
-- a **PID controller**.
-
-We used the front camera image to detect lane centers, defined the pixel offset between image center and lane center as steering error, and fed that error into a PID controller. This formed a simple vision-based feedback loop for steering.
-
-At low speeds, the vehicle drove reasonably stably. However, as speed increased, oscillations and overshoot became severe. Gain tuning alone could not guarantee consistent high-speed performance.
-
-This experience clearly demonstrated the limitations of simple **pixel-offset-based lane centering**.
-
-These lessons directly shaped our next steps in the Quanser phase. With access to SLAM-based pose estimation and waypoint-based planning, our control design evolved through **Stanley**, **Pure Pursuit**, and finally **MPC**, transitioning from simple offset compensation to fully trajectory-aware control.
+특히 **“예측 기반 최적 제어”** 라는 구조는 충분히 매력적이었다.  
+“우리 차량도 더 정교하게 제어할 수 있지 않을까?”라는 기대도 있었다.
 
 ---
 
-## 14. Evolution of Control – Stanley, Pure Pursuit, and MPC
+### 15.1 다른 길을 찾다: MPC(Model Predictive Control) 테스트
 
-<img src="images/control19.gif" width="450" alt="Control Stack – From Stanley to Pure Pursuit and MPC"/>
+실제로 MPC는:
 
-In the Quanser final stage, we worked in an environment without strong sensor constraints. With access to full information—vehicle position, speed, and reference path—we could now test more advanced controllers. To overcome the oscillation and overshoot limitations of PID, we moved toward more robust control schemes.
+- 미래 상태를 예측하고,
+- 조향·가속·제약조건을 함께 고려하여,
+- 특정 예측 지평선 내에서 **가장 합리적인 입력을 선택하는** 고급 제어 방식이다.
 
-### 14.1 Stanley Controller
+이론적으로는 우리가 원하던 “예측적이고 부드러운 제어”에 가장 잘 맞는 선택처럼 보였다.  
+그러나 구현을 시도하면서, 이 방식이 **학부 수준 환경에서 안정적으로 다루기 어렵다**는 현실적인 벽을 마주하게 되었다.
 
-We first implemented a **Stanley Controller** in MATLAB/Simulink. Stanley corrects:
+#### 1) 가장 큰 문제: 정확한 차량 모델의 부재
 
-- lateral deviation (**cross-track error**), and  
-- heading misalignment (**heading error**)
+MPC는 모델의 작은 오차에도 쉽게 불안정해지는 제어기다.  
+하지만 우리 환경에서는 다음과 같은 핵심 파라미터를 **정확히 알 방법이 없었다.**
 
-using a geometric formulation, which improves high-speed stability compared to simple PID steering.
+- 타이어 cornering stiffness  
+- 관성모멘트 \( I_{zz} \)  
+- 실제 조향 응답, 가속·감속 응답 특성  
 
-We referenced the paper:
+이 값들은 문서로 제공되지 않았고, 이를 실험적으로 추정할 수 있는 설비와 시간도 부족했다.  
+즉,
 
-> “Trajectory Tracking Control of Autonomous Heavy-Duty Mining Dump Trucks with Uncertain Dynamic Characteristics” (Liang Chen et al.)
+> “모델이 있어야 쓸 수 있는 제어기”임에도,  
+> **신뢰할 수 있는 모델을 만들 수 있는 조건이 아니었다.**
 
-and implemented a **Modified Stanley Controller** incorporating a collaborative preview structure based on speed and curvature.
+#### 2) 비용함수(cost function) 설계의 난관
 
-This modified Stanley controller produced a stable steering response even on tracks with large curvature variations.
+MPC가 요구하는 **비용함수(Q, R 가중치)** 설계도 큰 난관이었다.
 
-### 14.2 Pure Pursuit Controller
+- MATLAB 예제에서는 이미 잘 튜닝된 가중치가 제공되지만,  
+- 실차 환경에서는 모든 Q·R을 **처음부터 직접 설정**해야 했다.
 
-Next, we introduced **Pure Pursuit**. Pure Pursuit computes curvature to a **lookahead point** at a fixed distance ahead, generating a steering command that geometrically tracks the desired path.
+그러나 모델이 정확하지 않으니:
 
-Its advantages include:
+- 어떤 Q·R 조합도 이론과 실제 사이에서 일관되게 작동하지 않았고,
+- 튜닝의 기준점 자체가 부족한 상황이었다.
 
-- low computational cost,  
-- smooth trajectory following, and  
-- strong real-time suitability for embedded systems.
+결과적으로,
 
-In the QLabs competition environment, due to depth camera malfunctions, we could not rely on the SCNN+Depth coordinate input pipeline. Under these constraints, a Pure Pursuit-based control structure was the most practical choice.
+> MPC는 **이론적으로는 매우 강력하고**,  
+> 구현 자체도 코드 레벨에서는 가능했지만,  
+> **학부 수준 장비와 환경에서 “대회용 안정성”을 확보하기에는 한계가 명확했다.**
 
-We confirmed via Simulink simulations that steering and speed commands from the Pure Pursuit controller behaved as expected.
-
-### 14.3 Model Predictive Control (MPC)
-
-In the final real-vehicle integration stage, we moved to **MPC**. MPC formulates control as a constrained optimization problem over a prediction horizon, considering:
-
-- steering angle limits,  
-- steering rate limits, and  
-- acceleration/deceleration constraints.
-
-Compared to Stanley and Pure Pursuit, MPC offers smoother and more predictive control.
-
-We enhanced this by:
-
-- incorporating a **Kalman Filter (KF)** to improve state estimation reliability, and  
-- integrating **LSTM-based short-term prediction** models to forecast future values of speed and other state variables, feeding these predictions into MPC.
-
-The idea of LSTM arose from what we learned about **CAN (Controller Area Network)** in class:
-
-> “Real vehicles host numerous sensors, and their data are exchanged over the CAN bus.”
-
-We realized that in our system, diverse sensor streams from LiDAR, RGB, depth cameras, IMU, and CSI cameras could also be preprocessed and **learned as temporal sequences**.
-
-By combining LSTM prediction with MPC, we obtained a controller that could account for near-future dynamics and environmental changes, improving performance in nonlinear and dynamic conditions.
+이에 우리는 MPC를 최종 제어기로 채택하지 않고,  
+보다 **강건하고 실시간성이 확보되는 방식**으로 방향을 전환하게 되었다.
 
 ---
 
-## 15. Avoidance Maneuver – TDM + TG–PH Hybrid Framework
+### 15.2 최종 선택: SLAM 위치 + 트랙 waypoint + Pure Pursuit
+
+<img src="images/control14.png" width="450" alt="SLAM + Waypoint + Pure Pursuit"/>
+
+정리하자면, 우리가 직면한 제약은 다음과 같았다.
+
+- **Stanley**  
+  → QLabs의 Depth 카메라 버그로 인해 **실행 자체가 불가능**  
+- **MPC**  
+  → 차량 모델 파라미터 정확도 부족으로 인해 **실용적인 안정성 확보가 어려움**
+
+그 결과, 현실적으로 남은 선택지는 단 하나였다.
+
+1. SLAM이 제공하는 **비교적 안정적인 차량 현재 위치**
+2. 대회 트랙에 대해 **사전에 정의한 정적 waypoint 맵**
+
+이 두 정보를 활용하면서도 **안정적으로 동작하는 제어기**,  
+바로 **Pure Pursuit**였다.
+
+Pure Pursuit의 장점은 우리가 가진 환경과 완벽히 부합했다.
+
+- 정밀한 3D 차선 정보가 필요 없고  
+- 복잡한 고차 동역학 모델이 없어도 되며  
+- **look-ahead point** 만으로 안정적인 조향이 가능하고  
+- 계산량이 적어 **실시간성이 뛰어나다**
+
+즉, 우리의
+
+- 센싱 환경,  
+- 모델링 정확도,  
+- 시뮬레이터 제약,  
+- 대회 규칙
+
+을 모두 고려했을 때,  
+**Pure Pursuit는 가장 단순하면서도 가장 안정적으로 주행 가능한 유일한 선택**이었다.
+
+---
+
+### 15.3 Pure Pursuit의 문제점과 우리가 선택한 해결책
+
+그러나 Pure Pursuit 역시 **구조적인 한계**가 있었고,  
+실제 주행 과정에서 다음 두 가지 문제가 반복적으로 나타났다.
+
+#### 1) 직선 구간에서의 흔들림(Oscillation)
+
+직선 구간에서:
+
+- 아주 작은 오차도 과도한 조향으로 반영되며,
+- 핸들이 좌우로 흔들리는 진동 현상이 발생했다.
+
+**해결 전략**
+
+우리는 트랙 전체를 **직선 / 곡선 구간으로 분리**하고,  
+waypoint 맵에 **구간 타입 정보**를 포함시켰다.
+
+- **직선 구간에서는**  
+  - Look-ahead distance를 크게 설정  
+  - Steering saturation(최대 조향각 제한)을 강화  
+
+를 적용해,  
+불필요한 조향을 억제하고 **안정적인 직선 주행**을 확보했다.
+
+#### 2) 곡선 구간에서의 안쪽 침투(Inside Drift)
+
+곡선 구간에서는:
+
+- Look-ahead가 너무 길면 경로를 **직선에 가깝게 추종**하는 경향이 생기고,
+- 그 결과 차량이 커브 안쪽으로 말리는 현상이 나타났다.
+- 속도가 높을수록 언더스티어와 saturation이 쉽게 발생했다.
+
+**해결 전략**
+
+- **곡선 구간에서는**  
+  - Look-ahead distance를 짧게 설정  
+  - Target velocity(목표 속도)를 낮게 설정  
+
+을 통해:
+
+- 곡률 변화에 더 빠르게 반응하고,  
+- 무리 없는 조향 여유를 확보하도록 했다.
+
+이렇게 **구간 타입(직선/곡선)에 따라 서로 다른 튜닝을 적용한 Pure Pursuit**는,
+
+- 직선에서의 진동 문제와  
+- 곡선에서의 안쪽 침투 문제를 모두 해결했으며,  
+
+테스트 결과 **waypoint를 정확하게 추종하는 것**을 확인할 수 있었다.  
+이 과정에서 **waypoint 자체의 전처리와 맵 구조 설계가 얼마나 중요한지**가 더욱 부각되었다.
+
+---
+
+### 15.4 결론 – 여러 실패 끝에 얻은 가장 현실적인 해답
+
+여러 제어기를 실험하고, 실패하고, 다시 시도하는 과정을 거치며  
+우리는 다음 사실을 받아들여야 했다.
+
+- **Depth 버그**로 인해 Stanley 기반 구조는 **실현 불가능**했고  
+- 정확한 동역학 파라미터 부족으로 MPC는 **신뢰도 있게 작동하기 어려웠으며**  
+- **SLAM 위치 + 트랙 waypoint** 만으로도 안정적으로 작동하는 제어기는  
+  **Pure Pursuit뿐이었다**
+
+따라서 최종적으로 우리는 **Pure Pursuit 기반 제어 구조**를 채택했다.  
+이 결정은 단순히
+
+> “가장 간단해 보여서”
+
+내린 선택이 아니라,
+
+> **대회 환경에서 실제 차량을 가장 안정적으로 움직일 수 있는,  
+> 유일하고 현실적인 선택이었다.**
+
+여러 제어 이론과 구현을 직접 부딪혀 본 끝에,  
+우리가 가진 조건 안에서 **“정말로 끝까지 책임질 수 있는 제어기”** 가 무엇인지를 선택한 결과가  
+바로 이 Pure Pursuit였다.
+
+---
+
+## 16. 경로 계획 – RRT와 DQN의 결합
+
+<img src="images/rrt1.png" width="450" alt="RRT Exploration and Global Path Skeleton"/>
+<img src="images/rrt10.png" width="450" alt="Global Path and PH-Based Avoidance Paths"/>
+
+자율주행 시스템을 구현하는 과정에서 우리는 **인지(Perception)** 와 **위치 추정(Localization)** 을 단계적으로 구축해 왔다.  
+앞 단계에서는 SCNN 기반 차선 인지를 통해 트랙의 중심선을 추출하고, 이를 depth 정보와 결합해 waypoint를 생성하여 주행을 시도했다. 초기에는 Stanley 제어기를 사용했으나, depth 카메라의 한계로 인해 최종적으로 **Pure Pursuit 제어기**로 전환하였다.
+
+그러나 Pure Pursuit 제어기의 특성상, 차량이 보고 있는 **국지적(local) waypoint** 만으로는 한계가 있었다.  
+트랙 전체를 아우르는 **Global Path** 가 필요하다는 문제가 드러난 것이다.
+
+Global Path를 생성하기 위해서는 먼저 차량의 위치를 **절대좌표계에서 정확하게 파악**해야 했고, 이를 위해 우리는 Cartographer 기반 SLAM을 도입하여 **Localization 모듈**을 완성했다.
+
+SLAM을 통해 차량의 위치를 지도 좌표계에서 안정적으로 얻을 수 있게 되었지만, 이제 새로운 문제가 나타났다.
+
+> “차선도 보고, 위치도 알고 있는데  
+> 이제 차량을 **어디로**, **어떤 순서로** 움직여야 하지?”
+
+단순히 차선 중심을 따라가는 것이 아니라, 실제 택시처럼 여러 **Pickup·Dropoff 지점**을 제한된 시간 안에 가장 효율적으로 방문해야 했다.  
+즉, 전역 경로를 어떻게 생성할지(**Global Path Planning**)와  
+여러 Ride의 방문 순서를 어떻게 최적화할지라는 **고난도의 경로 계획 문제**가 본격적으로 등장한 것이다.
+
+---
+
+### 16.1 문제 정의 – “제한 시간 내에 택시를 가장 효율적으로 움직이려면?”
+
+Quanser ACC 대회의 메인 미션은 **도시형 트랙 내에서 택시를 운용**하는 것이었다.  
+대회 측은 5분 동안 수행해야 하는 공식 Ride 리스트(A, B, C … T)를 제공했으며,  
+각 Ride(A~T)는 **고정된 Pickup/Dropoff 지점**을 포함하고 있었다. 예시는 다음과 같다.
+
+- Ride A: 1 → 8  
+  - Node 1 = \([0.269, -0.049, 90°]\)  
+  - Node 8 = \([-0.749, 1.077, 180°]\)
+
+이에 따라 차량은 5분 동안 다음 과정을 반복해야 한다.
+
+1. Ride의 Pickup → Dropoff 지점을 순서대로 방문하고  
+2. Taxi Hub로 복귀한 뒤  
+3. 다음 Ride를 수행하는 과정을 반복
+
+즉, 문제는 단순히 “두 점 사이 최단 경로”가 아니라,
+
+> 여러 Ride의 지점을 어떤 **순서**와 **경로**로 방문해야  
+> 제한된 시간 안에 **최대 수익**을 낼 수 있는가?
+
+라는 **조합 최적화 + 경로 계획 문제**였다.
+
+---
+
+### 16.2 왜 RRT를 선택했는가 – ‘경로 생성기’로서의 역할
+
+트랙은 다음과 같은 요소를 포함한 복잡한 **연속 공간(Continuous Space)** 구조였다.
+
+- 곡률이 큰 커브
+- roundabout
+- 교차로
+- 양방향 단일차선 구조
+- 경계가 꼬이는 구간
+
+격자 기반 탐색 방식(Dijkstra 등)만으로는
+
+- 차량의 폭과 차선 경계 사이의 여유,
+- 연속적인 커브 형태와 실제 주행 가능한 궤적
+
+을 충분히 반영하기 어렵다고 판단했다.
+
+그래서 우리는 “경로를 탐색하는 방법”을 찾아보다가  
+**RRT(Rapidly-Exploring Random Tree)** 에 주목하게 되었다.
+
+RRT는:
+
+- 연속 공간을 직접 샘플링하면서  
+- 장애물을 피하는 경로를 빠르게 생성할 수 있고  
+- 고차원에서도 잘 동작한다는 점 때문에  
+
+실제 자율주행 연구에서도 널리 쓰이는 방법이라는 것을 논문과 자료를 통해 확인했다.
+
+결론적으로, 우리는 전역 경로(Global Path)를 설계할 때 다음과 같은 방향을 잡았다.
+
+> “트랙 전체를 자유공간(Free Space)으로 정의하고,  
+> 그 안을 RRT로 샘플링해서 경로를 만드는 구조로 가자.”
+
+즉, 기존 그래프 탐색 대신  
+**샘플링 기반의 경로 생성기**로서 RRT를 사용하기로 한 것이다.
+
+---
+
+### 16.3 RRT 적용 방식 – 오프라인, 구간 분할, 그리고 스무딩
+
+#### 1) 왜 RRT를 오프라인에서 돌렸는가?
+
+우리는 RRT를 **실시간으로 실행해 경로를 생성하며 달리는 용도**로 사용하지 않았다.  
+RRT는 강력하지만, 무작위 샘플링 특성 때문에 다음과 같은 문제가 있다.
+
+- 실행마다 경로가 조금씩 달라지고 (RRT의 무작위성)  
+- 샘플링 기반이라 생성된 경로가 **최적 경로라는 보장이 없으며**  
+- 일부 실행에서는 **비효율적이거나 이상한 경로**가 나올 수도 있다.
+
+그래서 전략을 바꿨다.
+
+> “RRT는 오프라인에서 여러 번 수행하여  
+> **가장 좋은 경로만 선택하는 방식**으로 사용하자.”
+
+그리고 선택된 경로는
+
+- Elastic Band  
+- Spline smoothing  
+
+과 같은 기법으로 부드럽게 다듬어,  
+제어기에 넣어도 안정적으로 동작하는 **최종 Global Path**를 만들었다.
+
+이렇게 하면 **대회 현장에서는 RRT를 실행할 필요가 없다.**  
+실제 주행 시에는 **이미 검증된 Global Path를 그대로 따라가기만 하면 되기 때문에**,  
+랜덤성 문제를 구조적으로 해결할 수 있었다.
+
+#### 2) 왜 트랙 전체를 한 번에 하지 않고, 구간별로 나누었는가?
+
+초기에는
+
+> “트랙 전체를 하나의 자유공간으로 두고 RRT를 돌려 보자”
+
+고 시도했다. 그러나:
+
+- 트리가 특정 영역(예: 긴 직선 구간)에만 몰려 자라거나  
+- 교차로, roundabout 등의 복잡한 구조 때문에  
+  자유공간의 정의가 뒤섞이는 문제가 발생했다.
+
+그래서 다음과 같은 방식으로 접근했다.
+
+1. 트랙을 **구간 단위**로 분할  
+   - 교차로 사이  
+   - roundabout  
+   - 직선 구간  
+   - 곡선 구간 등
+2. 각 구간을 **별도의 자유공간**으로 정의한 뒤  
+3. 구간별로 **독립적인 RRT**를 수행
+
+이렇게 생성된 **구간별 최적 경로**들을 이어 붙여  
+하나의 **Global Path**를 구성했다.
+
+---
+
+### 16.4 Directed Graph로의 변환 – 자료구조·알고리즘 수업의 재해석
+
+RRT로부터 얻은 Global Path는 **연속적인 좌표들의 집합**이다.  
+그러나 택시 문제를 풀기 위해서는 단순히 경로를 따라 가는 것만으로는 부족했다.
+
+우리는 다음과 같은 의사결정을 해야 했다.
+
+- 교차로에서 **어떤 방향으로 갈 것인지**  
+- 역주행이 허용되지 않는 **일방통행 구조**를 어떻게 반영할지  
+- 각 Ride의 **pickup/dropoff 지점을 반드시 방문해야 하는 제약**을 어떻게 관리할지
+
+이러한 의사결정은 연속 좌표보다는,  
+트랙을 **노드(Node)** 와 **간선(Edge)** 로 표현한 **directed graph** 구조가 더 적합했다.
+
+따라서 우리는 Global Path를 기반으로:
+
+1. 분기점/합류점/교차로를 **노드(Node)** 로 정의하고  
+2. 실제 주행 가능한 방향만을 **방향성 간선(Directed Edge)** 으로 연결하여  
+3. **역주행 가능성은 애초에 그래프 구조에서 제거**하였다.
+
+이 과정에서 자료구조·알고리즘 수업에서 배웠던 개념들이 자연스럽게 활용되었다.
+
+- 그래프를 정의하고,  
+- 노드와 간선을 구성하고,  
+- 경로 탐색이 가능한 형태로 구조화하는 과정 자체가  
+
+수업에서 이론적으로 배웠던 **그래프 모델링을 실제 트랙에 적용**한 사례가 된 것이다.
+
+---
+
+### 16.5 왜 DQN인가 – Ride 순서 최적화 문제
+
+Directed Graph가 준비되면,  
+두 노드 간 최단 경로는 학부 수업에서 배운 **Dijkstra / BFS / DFS** 와 같은 기존 알고리즘으로 충분히 계산 가능하다.
+
+그러나 우리가 풀어야 하는 핵심 문제는 “최단 경로”가 아니었다.
+
+> 여러 개의 pickup/dropoff 지점을  
+> **어떤 순서로 방문해야 5분 동안 최대 수익을 얻는가?**
+
+이 문제는 **단일 경로 탐색**이 아니라 **순서 최적화 문제**이며,  
+우리가 배운 기존 알고리즘만으로는 해결이 불가능했다.
+
+- **BFS / DFS**  
+  → 모든 순열을 탐색해야 하므로 규모가 커지면 확장 불가  
+- **Dijkstra**  
+  → 한 쌍의 지점 간 최단경로만 제공  
+
+즉, “경로 찾기”는 해결되었지만,  
+“**방문 순서 결정**”이라는 근본적인 문제는 여전히 남아 있었다.
+
+이 지점에서, 기존 지식만으로는 한계가 분명했기 때문에  
+우리는 “정책을 스스로 학습하는 방식”인 **강화학습(Reinforcement Learning)** 을 도입하기로 했다.
+
+참고한 자료는 다음과 같다.
+
+- Sutton & Barto, *Reinforcement Learning: An Introduction*  
+- 오일석 & 이진선, *파이썬으로 만드는 인공지능*
+
+이를 통해 Q-learning 구조를 이해한 뒤,  
+이 문제를 **DQN(Deep Q-Network)** 으로 모델링할 수 있다는 결론에 도달하였다.
+
+DQN을 선택한 이유는 다음과 같다.
+
+- Directed Graph에서의 의사결정은  
+  “현재 노드에서 갈 수 있는 몇 개의 방향 중 하나를 고르는”  
+  **이산적(discrete) 행동 구조**이기 때문에,  
+  Q-learning 기반인 **DQN이 문제의 특성과 가장 잘 맞았다.**
+- 여러 Ride 조합이 만들어내는 방문 순서 결정 문제는  
+  **규칙 기반으로 직접 정의하기 어렵다.**  
+  그래서 우리는 **보상 함수**만 설계하고,  
+  그 보상 신호를 기반으로 **DQN이 경험을 통해 최적 방문 순서를 학습**하도록 하는 구조를 택했다.
+
+이를 바탕으로 문제를 다음과 같이 정의했다.
+
+- **상태(state)** : 남은 경유지 집합, 현재 위치  
+- **행동(action)** : 다음에 방문할 노드 선택  
+- **보상(reward)** : 이동 거리 절약, 역주행 패널티, Ride 완료 보상  
+
+이렇게 해서 단순 거리 최적화가 아닌,
+
+> “최대 수익을 달성하는 방문 순서 정책”
+
+을 학습할 수 있었다.
+
+---
+
+### 16.6 왜 실시간이 아니라 오프라인 DQN인가 – 운영 전략으로의 전환
+
+초기에는 DQN을 **실시간으로 실행**하여,  
+경유해야 하는 경유지의 노드 번호를 넣고 **경로의 순서를 계산하는 방식**을 시도했다.  
+하지만 실험해 보니:
+
+- 노드 전체 개수: 약 60개  
+- DQN이 한 Ride의 최적 주행 시퀀스를 계산하는 데: **약 10~15초**
+
+Ride는 5분 동안 여러 개를 수행해야 했기 때문에,  
+**실시간 계산은 비효율적**이라는 결론에 도달했다.
+
+따라서 전략을 다음과 같이 바꾸었다.
+
+- 모든 Ride A~T에 대해  
+  **DQN이 최적의 시퀀스를 미리 계산**해 두고,
+- 대회에서는  
+  - Ride 번호 입력  
+  - → 미리 계산된 노드 시퀀스 불러오기  
+  - → 주행 시작  
+
+이 구조를 통해 현장에서는 **즉시 차량이 출발할 수 있도록** 운영 효율을 높일 수 있었다.
+
+---
+
+### 16.7 최종 구조 정리 – RRT, Directed Graph, DQN의 역할
+
+이제 RRT, Directed Graph, DQN 각각이 어떤 역할을 했는지 정리하면,  
+최종 구조는 다음과 같다.
+
+1. **RRT 기반 Global Path 생성 (오프라인)**  
+2. Global Path를 바탕으로 **구간별 Directed Graph 구성**  
+3. **DQN이 그래프 위에서 다음에 방문할 노드/경유지 시퀀스를 결정**  
+4. 선택된 노드에 대응하는 **waypoint JSON을 순서대로 로딩**  
+5. 각 waypoint 시퀀스를 **Pure Pursuit 제어기**로 추종  
+   (자세한 내용은 제어기 항목 참조)
+
+---
+
+### 16.8 이 섹션이 프로젝트 전체에서 갖는 의미
+
+경로 계획 파트에서 우리는:
+
+- 자료구조·알고리즘 수업에서 배운 **그래프 모델링과 탐색 개념**을  
+  실제 트랙 구조에 적용했고,
+- **RRT**를 활용해 복잡한 연속 공간에서의 **전역 경로 생성**을 구현했으며,
+- 기존 접근법으로 해결하기 어려운 **방문 순서 최적화 문제**를  
+  강화학습 교재와 논문을 바탕으로 **DQN 기반 정책 결정 구조**로 확장했다.
+
+즉, 이 경로 계획 모듈은
+
+> 학부에서 배운 기초 지식과  
+> 추가로 학습한 고급 개념을  
+> 실제 트랙의 제약 조건에 맞추어 **통합적으로 구현해낸 완성형 사례**이며,
+
+본 프로젝트의 **핵심 기술적 성취를 가장 잘 보여주는 부분**이라고 할 수 있다.
+
+
+---
+
+## 17. Avoidance Maneuver – TDM + TG–PH Hybrid Framework
 
 <table>
   <tr>
@@ -870,7 +1475,7 @@ Our system, however, did not have this second stage. We could brake hard, but no
 
 This marked the beginning of our work on **avoidance maneuvers**.
 
-### 15.1 Problem 1 – The Vehicle Cannot Decide *When* and *Where* to Avoid
+### 17.1 Problem 1 – The Vehicle Cannot Decide *When* and *Where* to Avoid
 
 The first deficiency was conceptual:
 
@@ -903,7 +1508,7 @@ In other words, TDM provides a systematic framework for answering:
 
 However, deciding that avoidance is necessary does not specify **how** to avoid.
 
-### 15.2 Problem 2 – Even After Deciding to Avoid, the Vehicle Lacks a Concrete Path
+### 17.2 Problem 2 – Even After Deciding to Avoid, the Vehicle Lacks a Concrete Path
 
 After implementing TDM, the vehicle could logically conclude:
 
@@ -936,7 +1541,7 @@ We therefore decided to **separate the tasks** of:
 1. deciding **how much to shift (offset)**, and  
 2. describing **how to move along that offset (curve)**.
 
-### 15.3 A Second Clue from PH Curves – Avoiding “Unnecessary Motion”
+### 17.3 A Second Clue from PH Curves – Avoiding “Unnecessary Motion”
 
 We turned to another paper:
 
@@ -971,7 +1576,7 @@ This yields an avoidance path that:
 - precisely reflects the required offset, and  
 - remains free of unnecessary oscillations.
 
-### 15.4 Reconstructing Two Papers into a Single Framework
+### 17.4 Reconstructing Two Papers into a Single Framework
 
 We combined these concepts into a three-step hybrid framework:
 
@@ -993,7 +1598,7 @@ By separating **decision**, **offset**, and **trajectory**, we were able to:
 - quantify how far to move sideways, and
 - generate a smooth path that minimally disrupts the original waypoint flow (PH).
 
-### 15.5 What We Ultimately Built
+### 17.5 What We Ultimately Built
 
 The crucial point is that we did not simply “chain two papers together.” We:
 
@@ -1017,7 +1622,7 @@ By reinterpreting and connecting these concepts, we strengthened our capability 
 
 ---
 
-## 16. Conclusion and Achievements
+## 18. Conclusion and Achievements
 
 <table>
   <tr>
@@ -1111,7 +1716,7 @@ Every step forward started from the question:
 
 ---
 
-## 17. Summary
+## 19. Summary
 
 The KDAS2025 project evolved from simple simulation-based control experiments into a **fully integrated AI-driven autonomous vehicle system**.
 
