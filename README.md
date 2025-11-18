@@ -580,7 +580,7 @@ Most importantly, we implemented the entire pipeline—from modeling to visualiz
 
 ## 6. 동역학 모델링 – `AEB_Dynamics` & `QCar_Dynamics`
 
-<img src="images/control18.gif" width="450" alt="Vehicle Dynamics – Longitudinal/Lateral Modeling"/>
+<img src="images/dyn1.png" width="450" alt="Vehicle Dynamics – Longitudinal/Lateral Modeling"/>
 
 여러 제어 구조를 실험할수록 한 가지 의문이 반복해서 떠올랐다.  
 센서가 말해주는 값만으로는 차량의 움직임을 온전히 제어할 수 없다는 점이었다.  
