@@ -265,242 +265,238 @@ The core of this project was the belief that we could build real technology with
 
 
 ---
-## 3. Hardware System – “어떻게 현실 세계로 자율주행 시스템을 가져올까?”
+## 3. Hardware System – “How do we bring an autonomous driving stack into the real world?”
 
-시뮬레이션 안에서는 인지·제어 알고리즘만 있어도 자율주행이 성립한다.  
-하지만 우리가 만든 스택을 실제 차량 위에서 돌리려는 순간, 전혀 다른 질문과 마주하게 되었다.
+<img src="images/cir.png" width="450" alt="Circuit"/>
 
-> “이 자율주행 소프트웨어를 현실에서 **믿고 돌릴 수 있는 차량용 하드웨어**는 어떤 모습이어야 할까?”
+In simulation, perception and control algorithms alone are enough to define “autonomous driving.”  
+But the moment we tried to run our stack on a real vehicle, a completely different question appeared:
 
-단순히 “차를 움직이는 보드 한 장”이 아니라,
+> “What kind of **vehicle hardware** do we need to trust this autonomous driving software in the real world?”
 
-- 부스트 컨버터,
-- Jetson 전원·I/O,
-- VESC 구동부,
-- 센서 인터페이스,
-- 그리고 이를 지탱하는 PCB 레이아웃까지
+It was no longer about “one board that moves the car.”
 
-알고리즘이 기대하는 동작을 실제 회로가 **안정적으로 버텨 줄 수 있는 구조**를 만들어야 했다.
+We needed:
 
----
+- a boost converter,
+- Jetson power and I/O circuitry,
+- a VESC-based drive stage,
+- sensor interfaces,
+- and PCB layouts that tie everything together,
 
-### 3.1 전원부 – “7.4 V를 19 V로만 올리면 되는 걸까?”
-
-처음 질문은 아주 단순했다.
-
-> “2S Li-ion(7.4 V)을 19 V로 올리기만 하면 되니, 시중 부스트 레퍼런스를 그대로 쓰면 되지 않을까?”
-
-그러나 부스트 동작을 제대로 들여다보는 순간, 질문은 바로 바뀌었다.
-
-- 전압 모드 제어 기준으로는 **RHP Zero** 때문에 대역폭을 크게 가져가기 어렵고
-- L·C를 키워도 출력 리플은 원하는 만큼 줄지 않으며
-- 대신 부피·비용·과도 응답이 함께 악화되는 구조
-
-즉, 단순히 “더 큰 부품을 쓰는 것”만으로는 자율주행 시스템이 요구하는 **전원 품질과 응답성**을 확보하기 어렵다는 결론에 도달했다.
-
-그래서 스스로에게 다시 물었다.
-
-> “부품을 키우는 방식이 아니라, **제어 구조와 토폴로지**를 바꾸면 어떤 선택지가 생길까?”
-
-여기서 내린 첫 번째 답이 바로 **전류 모드 제어(PCMC, Peak Current Mode Control)**였다.
-
-- 인덕터 전류를 피드백에 포함시켜 플랜트를 사실상 1차 지연에 가깝게 만들고
-- 슬로프 보상으로 서브하모닉 진동을 제어하면서
-
-부스트 컨버터를  
-“제어 성능이 나쁜 토폴로지”가 아니라  
-“전류 모드 제어를 전제로 하면 충분히 제어 가능한 대상”으로 다시 보게 되었다.
-
-하지만 곧 다음 질문이 이어졌다.
-
-> “전류 제어를 써도, 이 모든 리플과 소자 스트레스를 **한 위상에 다 몰아줘야 할까?**”
-
-여기서 선택한 구조가 **2상 180° 인터리브드 부스트**였다.
-
-- 두 위상의 인덕터 리플 전류가 서로 상쇄되면서 **입·출력 리플 전류가 줄어들고**
-- 인덕터·커패시터가 전류를 나눠 받으면서 **발열과 소자 스트레스가 분산**되며
-- 체감 스위칭 주파수가 두 배가 되어, **같은 리플 목표를 더 작은 L·C로 달성**할 수 있었다.
-
-이 과정을 거치며 전원부에 대한 정의도 바뀌었다.
-
-> “이 승압부는 단순한 ‘7.4 V → 19 V 변환 회로’가 아니라,  
-> **RHP Zero·리플·소자 스트레스**를  
-> 제어 구조(PCMC)와 토폴로지(2상 인터리빙)로 풀어낸 **전원 아키텍처**다.”
+so that the physical system can **reliably sustain what the algorithms expect it to do**.
 
 ---
 
-### 3.2 Jetson과 센서 – “레퍼런스를 어디까지 그대로 믿어야 할까?”
+### 3.1 Power Stage – “Is it enough to just boost 7.4 V to 19 V?”
 
-Jetson을 올리려 할 때 가장 먼저 떠올랐던 생각은 이렇다.
+The initial question was deceptively simple:
 
-> “NVIDIA 레퍼런스 보드를 1:1로 카피하면 가장 안전하지 않을까?”
+> “We just need to boost 2S Li-ion (7.4 V) to 19 V. Can’t we just copy a reference boost design from the market?”
 
-전원 시퀀스, USB, CSI 포트 구성까지 이미 잘 정리된 회로가 있으니,  
-겉으로 보기에는 그대로 따르는 것이 **리스크가 없어 보였다**.
+Once we actually analyzed the boost behavior, that question changed immediately.
 
-하지만 실제 부품 리스트를 펼쳐 놓고 보니 문제가 드러났다.
+- In **voltage-mode control**, the **RHP zero** fundamentally limits how wide we can set the bandwidth.
+- Increasing L and C reduces ripple but also worsens size, cost, and transient response.
+- In other words, simply “using bigger parts” is not enough to meet the **power quality and response** required by an autonomous system.
 
-- 일부 전원 IC·허브 칩은 **단가가 과도하게 높고**
-- **EOL·재고 부족**으로 조달이 불안정하며
-- 연구·교육용 플랫폼처럼 여러 번 리비전·재제작이 필요한 보드에는 적합하지 않았다.
+So we had to ask a different question:
 
-그래서 질문을 바꿔야 했다.
+> “Instead of oversizing components, what if we change the **control structure and topology**?”
 
-> “성능은 레퍼런스를 따라가되,  
-> **지속적으로 조달 가능한 보드**로 만들려면 어떻게 해야 할까?”
+The first answer was to move to **current-mode control (PCMC, Peak Current Mode Control)**:
 
-여기서 내린 결론은 다음과 같다.
+- We include the inductor current in the feedback loop, making the effective plant closer to a first-order system.
+- We add slope compensation to suppress subharmonic oscillation.
 
-1. **전기적 스펙(전압·전류·리플·응답)** 은 레퍼런스를 기준으로 유지한다.  
-2. 그 스펙을 만족하면서도 **국내에서 안정적으로 구할 수 있는 소자**로 회로를 재구성한다.
+This allowed us to reframe the boost converter: not as a “fundamentally hard-to-control topology,” but as a **well-behaved target under current-mode control**.
 
-실제로는,
+Then the next question followed:
 
-- 전원 IC는 동일급 스펙을 갖는 **대체 부품**으로 교체했고
-- USB 허브는 데이터시트·레퍼런스가 충분하고 **유통이 안정된 칩**으로 바꾸어
-- Jetson–허브–센서로 이어지는 경로를 **현실적인 부품 조합으로 다시 설계**했다.
+> “Even with current-mode control, do we really have to dump all ripple and device stress into a single phase?”
 
-정리하면,
+Our solution was a **2-phase, 180° interleaved boost**:
 
-> “Jetson 전원·I/O 보드는 레퍼런스의 전기적 요구사항은 지키되,  
-> 실제로 **사서 쓰고, 고쳐 쓰고, 다시 만들 수 있는** 부품들로 재구성한 보드다.”
+- The inductor ripple currents of the two phases partially cancel, reducing **input and output ripple current**.
+- Inductors and capacitors share current, **distributing thermal and electrical stress**.
+- The effective switching frequency doubles, allowing us to hit the same ripple targets with **smaller L and C**.
 
----
+After this design process, our view of the power stage changed completely:
 
-### 3.3 모터 구동 – “어떻게 해야 믿을 수 있는 출력을 만들 수 있을까?”
-
-모터 쪽에서는 이런 질문이 출발점이었다.
-
-> “자율주행 차량의 모터 제어를,  
-> 어떻게 하면 **안정적이고 신뢰성 있게** 만들 수 있을까?”
-
-이 시스템에서 모터는 단순히 바퀴를 돌리는 부품이 아니다.  
-인지·제어 스택이 계산해 낸 값을 **현실 세계의 움직임으로 바꾸는 최종 출력 단계**다.  
-여기서 제어가 흔들리거나, 보호 로직이 약하거나, Jetson–VESC 통신이 끊기면 전체 시스템이 무너진다.
-
-그래서 먼저 이렇게 정리했다.
-
-> “모터 제어 코어를 새로 만드는 대신,  
-> **검증된 코어 위에 우리 하드웨어를 입히자.**”
-
-그 답으로 선택한 것이:
-
-- 오픈소스 **VESC 레퍼런스**,  
-- 그리고 **F1TENTH VESC ROS node(vesc_driver 등)**였다.
-
-즉,
-
-- FOC 제어, 전류·전압·온도 센싱, 보호 로직은 이미 검증된 **VESC**에 맡기고
-- Jetson과의 상위 제어 연결은 **ROS 노드**를 통해 토픽/서비스 기반으로 구성했다.
-
-그 다음에 나온 질문은 **연결 방식**이었다.
-
-> “소프트웨어는 검증됐는데,  
-> 이걸 물리적으로 어떻게 연결해야 **‘안 끊기는 제어 경로’**가 될까?”
-
-처음 떠올린 것은,  
-외부 케이블과 노출 커넥터로 VESC와 Jetson을 이어 붙이는 방식이었다. 그러나 실제 차량 환경에서는
-
-- 진동, 충격,
-- 반복 탈착,
-- 좁은 공간에서의 무리한 배선
-
-때문에 케이블이 **살짝만 빠져도 통신이 끊길 수** 있다.  
-이건 곧 **예측 불가능한 모터 거동과 안전 이슈**로 이어진다.
-
-그래서 연결에 대한 답도 바뀌었다.
-
-> “VESC–Jetson 링크를 가능한 한 **보드 내부로 끌고 들어오자.**”
-
-최종 설계에서는,
-
-- 핵심 인터페이스를 **PCB 내부 패턴**으로 연결하고
-- 외부에서 자주 만지는 케이블 구간은 **최소화**했다.
-
-그 결과, VESC와 Jetson은
-
-- 소프트웨어적으로는 **VESC–ROS 스택** 위에서
-- 하드웨어적으로는 **내부 결선 구조** 위에서
-
-쉽게 끊기지 않는 **하나의 제어 경로**를 갖게 되었다.
-
-요약하면,
-
-> “VESC 기반 구동부는 검증된 모터 제어 코어 위에,  
-> 우리 차량에 맞게 설계한 전력·센싱·통신·결선 구조를 얹어  
-> 모터 제어의 안정성과 신뢰성을 끌어올린 하드웨어 스택이다.”
+> “This booster is not just a ‘7.4 V → 19 V converter.’  
+> It is a **power architecture** that addresses RHP zeros, ripple, and device stress using  
+> current-mode control (PCMC) and a 2-phase interleaved topology.”
 
 ---
 
-### 3.4 PCB 레이아웃 – “선 하나까지 어디까지 신경 써야 할까?”
+### 3.2 Jetson and Sensors – “How far should we trust the reference design?”
 
-회로 구성이 끝나갈 때쯤, 또 하나의 질문이 생겼다.
+When we first planned to mount a Jetson, our instinct was:
 
-> “이 회로가 실제 PCB 위에서 **얼마나 안정적으로 동작**하게 만들 수 있을까?”
+> “Wouldn’t it be safest to copy the NVIDIA reference board 1:1?”
 
-스위칭 주파수가 올라갈수록 **트레이스와 비아는 단순한 도선이 아니다.**  
-저항뿐 아니라 **기생 인덕턴스(L)**, **기생 커패시턴스(C)** 를 가진 하나의 부품이 된다.
+The reference design already includes power sequencing, USB, and CSI port configurations.  
+At first glance, copying it exactly seemed like the **lowest-risk option**.
 
-그래서 레이아웃에서도 이런 질문을 던질 수밖에 없었다.
+But once we laid out the BOM, the issues became clear:
 
-> “루프를 어떻게 닫고, 선을 어떻게 꺾어야,  
-> 나중에 우리가 **믿고 쓸 수 있는 보드**가 될까?”
+- Some power ICs and hub chips were **very expensive**.
+- Several components had **EOL or unstable supply**, making long-term procurement unreliable.
+- For a research/education platform that might go through multiple revisions and re-spins, this was not sustainable.
 
-여기서 잡은 핵심 원칙은 두 가지였다.
+So we had to reformulate the question:
 
-1. **“루프 면적을 줄이되, 기생 커패시턴스를 과하게 키우지 않는다.”**  
-2. **“신호는 항상 리턴과 함께 그린다.”**
+> “If we want to match the reference design’s performance,  
+> how do we do it with **components that we can continuously source**?”
 
-구체적으로는 다음과 같은 기준을 적용했다.
+Our conclusion was:
 
-- 부스트 스위칭 루프, 게이트 드라이버–MOSFET 루프, 전류 센싱 루프는  
-  가능한 한 **작은 면적 안에서 닫히도록 배치**해 기생 L을 줄였다.
-- 동시에, 지나치게 압축해서 인접 트레이스·플레인과의 기생 C가 과도하게 커지지 않도록  
-  **간격과 루프 크기를 조정하며 중간 지점을 탐색**했다.
-- 트레이스 코너는 **90° 대신 45°**로 꺾어,  
-  고주파에서의 임피던스 변화, 국부 발열, 파형 왜곡을 줄였다.
+1. Keep the **electrical specifications** (voltage, current, ripple, transient behavior) aligned with the reference.  
+2. Rebuild the circuit using **components that are realistically available and stable in the local supply chain**.
 
-또한,
+In practice:
 
-- 고속·민감 신호는 바로 아래/옆의 **GND 리턴 경로와 나란히 배치**해  
-  신호–리턴 루프 면적을 최소화하고, 외부로 나가는 EMI와 외부에서 들어오는 노이즈를 줄였다.
-- USB, CSI 같은 라인이 전력 라인과 **불필요하게 평행하거나 교차하지 않도록** 배치해  
-  기생 커플링을 억제했다.
-- 외부 포트 근처에는 **TVS/ESD 어레이를 최대한 근접** 배치해  
-  정전기·서지를 포트 단에서 처리했고,
-- 파워 GND와 신호 GND는 보드 전체를 섞지 않고  
-  **필요한 지점에서만 한 점 접합(single-point connection)** 을 만들었다.
+- Power ICs were replaced with **equivalent-grade devices** that matched the required specs.
+- The USB hub was switched to a chip with solid documentation and **stable distribution**, and we redesigned the Jetson–hub–sensor chain around it.
 
-정리하면,
+In short:
 
-> “이 보드는 회로도만 깔끔한 보드가 아니라,  
-> 트레이스 하나, 루프 하나까지 **기생 L/C와 신뢰성을 의식해서 배치한 PCB**다.”
+> “The Jetson power/I-O board preserves the reference design’s electrical requirements,  
+> but is rebuilt with components that we can **actually buy, repair, and recreate** over time.”
 
 ---
 
-### 3.5 정리 – “단순한 레퍼런스 조합 하드웨어”가 아니라 “질문에 답한 하드웨어”
+### 3.3 Motor Drive – “How do we create an output we can trust?”
 
-겉으로 보면 이 프로젝트의 하드웨어는
+On the motor side, the starting question was:
 
-- 2상 인터리브드 부스트 컨버터,
-- Jetson 전원·I/O 보드,
-- VESC 기반 구동부
+> “How can we make motor control for an autonomous vehicle **stable and trustworthy**?”
 
-라는 비교적 단순한 구조의 PCB들로 보인다.
+In this system, the motor is not just a part that spins the wheels.  
+It is the **final actuator** that turns perception and control outputs into real-world motion.  
+If motor control is unstable, safety logic is weak, or Jetson–VESC communication breaks, the entire stack collapses.
 
-하지만 실제로는 그 뒤에 다음과 같은 질문과 답이 겹겹이 쌓여 있다.
+We therefore made an early design choice:
 
-- “부스트 컨버터로 이 시스템을 **정말 안정적으로** 돌릴 수 있을까?”
-- “Jetson 레퍼런스를 **어디까지 그대로 따라가는 게** 맞을까?”
-- “모터 제어를 어떻게 해야 **끊기지 않고 안전하게** 만들 수 있을까?”
-- “트레이스 하나까지 어떻게 그려야 **장기간 믿고 쓸 수 있을까?**”
+> “Rather than building our own motor control core,  
+> let’s **build our hardware around a proven core**.”
 
-그래서 이번 결과물을 한 문장으로 요약하면 이렇게 말할 수 있다.
+The answer was:
 
-> “이 보드는 VESC·Jetson 레퍼런스 같은 검증된 기반 위에,  
-> 우리가 직접 던진 질문들과 그에 대한 답을  
-> 회로와 레이아웃으로 구현한  
-> **‘질문에 반응해서 진화한 자율주행 하드웨어 스택’**이다.”
+- the open-source **VESC reference**, and  
+- the **F1TENTH VESC ROS nodes** (such as `vesc_driver`).
+
+That is:
+
+- Low-level FOC control, current/voltage/temperature sensing, and protection logic are delegated to **VESC**, which is already well tested.
+- High-level commands between Jetson and VESC flow through **ROS nodes**, using topics and services.
+
+The next question was about **physical connectivity**:
+
+> “The software stack is robust, but how do we connect things physically  
+> so that we have a **control path that does not randomly break**?”
+
+Our first thought was to simply wire Jetson and VESC using external cables and exposed connectors.  
+However, in a real vehicle:
+
+- vibration and shock,
+- repeated plugging/unplugging,
+- and constrained cable routing
+
+mean that even a slightly loose connector can **break communication**—which directly turns into unpredictable motor behavior and safety risk.
+
+So we changed our answer:
+
+> “Pull the VESC–Jetson link **as far inside the PCB as possible**.”
+
+In the final design:
+
+- Critical interfaces between Jetson and VESC are connected via **internal PCB traces**, not long external cables.
+- Exposed, frequently-handled cable segments are **minimized**.
+
+The result is a VESC–Jetson pair that:
+
+- is integrated logically through the **VESC–ROS stack**, and  
+- is connected physically through a **robust internal PCB path**,
+
+forming a **single, hard-to-break control pathway**.
+
+Summarizing:
+
+> “Our VESC-based drive stage places a proven motor-control core underneath  
+> a custom power, sensing, communication, and wiring design that is tailored to our vehicle,  
+> raising the stability and trustworthiness of motor control.”
+
+---
+
+### 3.4 PCB Layout – “How much attention does a single trace deserve?”
+
+Near the end of the schematic design, another question arose:
+
+> “How can we ensure that this circuit, once laid out on a PCB,  
+> will behave **stably in the real world**?”
+
+At higher switching frequencies, **traces and vias are no longer just ‘wires’.**  
+They carry resistance as well as **parasitic inductance (L)** and **parasitic capacitance (C)**.
+
+So layout design inevitably led to the question:
+
+> “How do we close loops and route traces so that we can **trust this board** later?”
+
+We based our layout on two core principles:
+
+1. **“Minimize loop area, but don’t create excessive parasitic capacitance.”**  
+2. **“Always route signals together with their return paths.”**
+
+More concretely:
+
+- The boost switching loop, gate driver–MOSFET loop, and current sensing loop were  
+  routed to close within **tight, compact areas** to reduce parasitic L.
+- At the same time, we avoided over-compressing them to the point that parasitic C to adjacent traces/planes would explode;  
+  we tuned spacing and loop size to find a **balanced middle ground**.
+- Trace corners were routed at **45° instead of 90°**, reducing local impedance jumps, heating, and waveform distortion in high-frequency paths.
+
+Additionally:
+
+- High-speed and sensitive signals were placed with their **GND return paths directly under/next to them**,  
+  minimizing the signal–return loop area and reducing both radiated EMI and susceptibility to external noise.
+- USB and CSI lines were routed so that they would **not run long, parallel segments with power lines**, mitigating unwanted coupling.
+- TVS/ESD arrays were placed **as close as possible** to each external connector,  
+  clamping ESD and surge events at the port itself.
+- Power GND and signal GND were not mixed arbitrarily across the board;  
+  they were **joined at carefully chosen single-point connections**.
+
+In summary:
+
+> “This is not just a board with a clean schematic.  
+> It is a PCB whose traces and loops are laid out with **parasitic L/C and long-term reliability in mind**.”
+
+---
+
+### 3.5 Summary – Not just “combined references”, but “hardware shaped by questions”
+
+At a glance, the hardware in this project might look like:
+
+- a 2-phase interleaved boost converter,
+- a Jetson power/I-O board,
+- and a VESC-based drive unit.
+
+Just three PCBs.
+
+But beneath that, there is a long chain of questions and answers:
+
+- “Can we really power this system stably with a boost converter?”
+- “How far should we copy the Jetson reference, and where must we diverge?”
+- “How do we make motor control that is both safe and robust against disconnection?”
+- “How should we draw even a single trace so that we can trust it years later?”
+
+Because of that, we think this work is best described as:
+
+> “A hardware stack that evolved in response to our own questions —  
+> built on proven references like VESC and Jetson,  
+> but re-engineered in circuitry and layout to become a  
+> **‘question-driven autonomous driving hardware stack.’**”
+
 
 ---
 
@@ -578,155 +574,155 @@ Most importantly, we implemented the entire pipeline—from modeling to visualiz
 
 ---
 
-## 6. 동역학 모델링 – `AEB_Dynamics` & `QCar_Dynamics`
+## 6. Dynamics Modeling – `AEB_Dynamics` & `QCar_Dynamics`
 
 <img src="images/dyn1.png" width="450" alt="Vehicle Dynamics – Longitudinal/Lateral Modeling"/>
 
-여러 제어 구조를 실험할수록 한 가지 의문이 반복해서 떠올랐다.  
-센서가 말해주는 값만으로는 차량의 움직임을 온전히 제어할 수 없다는 점이었다.  
-하지만 자율주행 알고리즘은 결국,
+As we experimented with more and more control structures, one question kept coming back:  
+sensor outputs alone were not enough to fully control the vehicle’s motion.
 
-> “지금 넣은 조향·가속 입력이 앞으로 어떤 움직임을 만들 것인가?”
+Yet every autonomous driving algorithm fundamentally assumes:
 
-를 전제로 한다.  
-즉, 센서가 말하는 **현재의 관측값** 위에,  
-차량이 실제로 **어떻게 움직일 수 있는지에 대한 예측적 이해**가 필요했다.  
-이 고민에서 동역학 모델링이 시작되었다.
+> “Given the steering and throttle I apply now,  
+> what kind of motion will this create in the future?”
 
----
-
-### 6.1 첫 번째 모델 – Bicycle Model을 통해 이해한 ‘차가 움직이는 방식’
-
-초기 단계에서는 MATLAB의 **Bicycle Vehicle Model**을 활용했다.  
-이 모델은 일반적인 가솔린 차량의 거동을 기반으로 만들어져 있으며,
-
-- 타이어–지면 상호작용,
-- 차량의 기본 종·횡 방향 동역학
-
-을 이해하기에 좋은 참고 구조였다.
-
-우리가 이 모델을 사용한 이유는 단순했다.
-
-- 이미 검증된 물리 모델이었고  
-- 동역학 블록 구조를 빠르게 이해할 수 있었고  
-- “차량이 어떤 원리로 움직이는지”를 학습하기에 적절했기 때문이다.
-
-또한 우리의 실험 환경은 **평면 트랙**이었기 때문에,  
-3DOF 중 z축(상하 방향) 거동은 제외하고,  
-x–y 평면에 집중한 **2DOF 구성**으로 단순화해 사용했다.
-
-다만 이 모델은 근본적으로 **풀사이즈 가솔린 차량**을 기준으로 만들어져 있었다.  
-그래서 “차량 물리의 개념을 배우는 데는 적합했지만,  
-실제로 우리가 제어해야 할 **QCar의 거동과는 거리가 있었다.**”
-
-이 지점이, 우리가 **QCar 전용 동역학 모델(QCar_Dynamics)** 을 따로 구성하게 된 출발점이었다.
+In other words, on top of the **current measurements** from sensors,  
+we needed a **predictive understanding of how the vehicle can actually move** in physical terms.  
+This is where our dynamics modeling began.
 
 ---
 
-### 6.2 왜 QCar Dynamics를 다시 만들었는가 – 플랫폼이 바뀌면 물리식도 바뀐다
+### 6.1 First Model – Understanding “How a Car Moves” with the Bicycle Model
 
-Quanser의 **QCar**는 일반 차량과 구조가 크게 다르다.
+In the early phase, we used MATLAB’s built-in **Bicycle Vehicle Model**.  
+This model is based on the behavior of a typical gasoline vehicle and provides a good reference structure for understanding:
 
-- BLDC 모터 + ESC 기반 구동
-- 기계식 브레이크 없음
-- 1/10 스케일 특유의 저질량·저속 플랫폼
-- 굴림 저항과 모터 응답이 훨씬 크게 체감됨
+- tire–road interaction, and  
+- basic longitudinal and lateral vehicle dynamics.
 
-이런 구조적 차이 때문에,  
-기존 Bicycle Model만으로는 QCar의 **속도 변화, 감속 패턴, 슬립 현상**을 제대로 설명할 수 없었다.
+Our reasons for using this model were straightforward:
 
-그래서 우리는 QCar의 실제 거동을 설명하기 위해  
-여러 물리식을 다시 검토하고, 그중에서
+- it is already a **validated physical model**,  
+- it allowed us to quickly understand vehicle dynamics block structures, and  
+- it was well suited for learning **“by what principles does a vehicle actually move?”**
 
-> “QCar의 움직임을 결정하는 데 꼭 필요한 관계식”
+Because our test track was a **flat surface**,  
+we ignored the z-axis (vertical motion) from the original 3DOF structure  
+and used a simplified **2DOF (x–y plane)** configuration.
 
-만을 선별해 **QCar_Dynamics** 블록을 별도로 구성했다.
+However, this model is fundamentally built for a **full-size gasoline vehicle**.  
+So while it was ideal for learning general “vehicle physics,”  
+it did not accurately reflect the actual behavior of **QCar, the platform we had to control in practice**.
 
----
-
-### 6.3 QCar용 물리식을 고른 기준 – ‘예측 가능한 거동’을 만들기 위해
-
-QCar Dynamics를 만들기 위해 검토한 물리식은 많았지만,  
-우리가 원하는 것은 “모든 물리 현상”이 아니라
-
-> 다음 움직임을 이해하는 데 필수적인 관계식
-
-이었다. 핵심 기준은 다음 세 가지였다.
-
-#### ① ESC Duty → 전압 → 전류 → 모터 토크 → 바퀴 회전 → 차량 속도
-
-QCar에서 가장 중요한 특성은,  
-**속도 변화가 ESC Duty 변화에 거의 직결된다는 점**이다.
-
-따라서 이 전달 경로를 모델에 포함시키는 것은 필수였다.  
-이 관계가 없으면 “왜 속도가 변하는지”를 해석할 수 없기 때문이다.
-
-#### ② 감속은 브레이크가 아니라 ‘저항’으로 발생
-
-QCar에는 별도의 브레이크가 없다.  
-따라서 감속은
-
-- 모터 역토크,
-- 굴림저항,
-- 공기저항
-
-의 조합으로 설명된다.  
-이 요소들을 포함해야만, SLAM·회피 기동·제어기가 사용하는 속도값이  
-**“물리적으로 가능한 범위인지”** 판단할 수 있다.
-
-#### ③ 저질량 플랫폼 특성상, 작은 슬립도 오차를 키운다
-
-1/10 스케일 저질량 플랫폼에서는  
-작은 슬립도 실제 속도와 센서가 보는 속도 사이에 의미 있는 차이를 만든다.  
-그래서 슬립은 완전히 무시하기보다는,  
-단순화된 형태로라도 모델에 포함시키는 것이 필요했다.
-
-여기서 언급한 것들은 전체 모델의 일부에 불과하지만,  
-공통점은 하나다.
-
-> “QCar가 실제로 어떻게 움직이는지”를 설명하는 데 꼭 필요한 요소들만 선별했다는 점.
-
-이 방식을 통해 우리는
-
-- 불필요한 복잡성은 지우면서도  
-- **다음 입력에서 차량이 어떻게 반응할지 예측 가능한 구조**를 만들 수 있었다.
+That realization became the starting point for building a **QCar-specific dynamics model (`QCar_Dynamics`)**.
 
 ---
 
-### 6.4 동역학 모델이 만들어준 것 – ‘다음 움직임을 이해할 수 있는 기반’
+### 6.2 Why We Rebuilt QCar Dynamics – When the Platform Changes, the Physics Change Too
 
-동역학 모델링은 단순히
+Quanser’s **QCar** is structurally very different from a conventional car:
 
-> “시뮬레이션을 더 정교하게 만드는 작업”
+- BLDC motor + ESC-based drive
+- no mechanical brake system
+- a 1/10-scale platform with low mass and low speed
+- rolling resistance and motor response are much more prominent
 
-이 아니었다.
+Because of these structural differences,  
+the standard Bicycle Model alone could not properly explain QCar’s:
 
-이 모델을 통해 우리는 처음으로,
+- speed changes,  
+- deceleration patterns, or  
+- slip behavior.
 
-- 우리가 넣은 조향·가속 명령이  
-  다음 순간 어떤 속도·위치 변화를 만들 수 있는지,
-- ESC Duty 변화가 실제 속도 변화에  
-  어느 정도 비율로 반영되는지,
+We therefore revisited the underlying physics and selected only those relationships that were:
 
-를 **물리식으로 설명할 수 있게** 되었다.
+> “strictly necessary to determine how QCar actually moves.”
 
-즉, 동역학 모델은
+Using these, we built a separate **`QCar_Dynamics`** block.
 
-> 센서가 말해주는 “현재 값” 위에  
-> “차량이 다음에 어떻게 움직일 수 있는지”를 그려볼 수 있게 해주는  
-> **예측적 사고의 출발점**
+---
 
-이었다.
+### 6.3 Criteria for Selecting QCar Physics – To Build “Predictable Behavior”
 
-이 물리적 이해는 이후에 설계한
+We examined many physical equations to construct QCar Dynamics,  
+but we were not trying to model “every physical phenomenon.”  
+What we really needed were only the relationships that are:
 
-- SLAM 기반 위치 추정,  
-- MPC와 같은 고급 제어기,  
-- AEB 및 회피 기동 알고리즘
+> essential to understanding the next motion of the vehicle.
 
-을 구성하는 데 있어 **공통의 기반**이 되었다.  
-센서 값만 바라보던 시스템에서,  
-“다음 움직임을 스스로 예측할 수 있는 시스템”으로 나아가는 첫 단계가 바로 이 **동역학 모델링**이었다.
+Our key criteria were:
+
+#### ① ESC Duty → Voltage → Current → Motor Torque → Wheel Rotation → Vehicle Speed
+
+The most critical characteristic of QCar is that  
+**changes in vehicle speed are almost directly tied to changes in ESC duty**.
+
+So this entire transfer chain had to be part of the model.  
+Without it, we would have no way to interpret *why* speed changes occur.
+
+#### ② Deceleration Comes from “Resistive Forces”, Not Brakes
+
+QCar has no dedicated brake system.  
+Deceleration is produced by a combination of:
+
+- motor back-torque,  
+- rolling resistance, and  
+- aerodynamic drag.
+
+We had to include these terms so that modules like SLAM, evasive maneuvers, and controllers could judge whether a given speed value is
+
+> **“physically feasible in this situation.”**
+
+#### ③ On a Low-Mass Platform, Small Slip Still Matters
+
+On a 1/10-scale, low-mass platform,  
+even small amounts of slip can produce meaningful differences  
+between the true vehicle speed and the speed reported by sensors.
+
+So instead of completely ignoring slip,  
+we chose to include a **simplified slip model** inside our dynamics block.
+
+These are only part of the full model, but they share one common property:
+
+> they are precisely the elements needed to explain  
+> “how QCar actually moves in the real world.”
+
+With this selection strategy, we were able to:
+
+- remove unnecessary complexity, while  
+- building a structure where the vehicle’s reaction to the next input is **predictable**.
+
+---
+
+### 6.4 What the Dynamics Model Gave Us – A Basis for Understanding “The Next Motion”
+
+Dynamics modeling was not just about:
+
+> “making the simulation prettier or more detailed.”
+
+For the first time, this model allowed us to explain in physical terms:
+
+- how a given steering and throttle command  
+  will change speed and position in the next moment, and
+- how changes in ESC duty  
+  translate into actual changes in vehicle speed and by what ratio.
+
+In other words, the dynamics model became:
+
+> a **starting point for predictive reasoning**,  
+> letting us project “how the vehicle can move next”  
+> on top of the sensor’s current readings.
+
+This physical understanding later became the **common foundation** for:
+
+- SLAM-based localization,  
+- advanced controllers such as MPC, and  
+- AEB and evasive maneuver algorithms.
+
+It marked the transition of our system from one that simply **observes** sensor values  
+to one that can **actively predict its own future motion**—  
+and that transition began with this **dynamics modeling** step.
+
 
 ---
 
