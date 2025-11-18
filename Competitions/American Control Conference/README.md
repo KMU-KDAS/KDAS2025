@@ -45,10 +45,10 @@ Through this structure, the competition evaluates the **integrated performance**
   - Integrated **LiDAR, RealSense, and IMU** in **ROS2**, managing inter-node communication.
 
 Detailed architecture and results are available here:  
-Decision https://github.com/KMU-KDAS/KDAS2025/tree/main/Product/Decision, 
-Control https://github.com/KMU-KDAS/KDAS2025/tree/main/Product/Control, 
-ROS https://github.com/KMU-KDAS/KDAS2025/tree/main/Product/Control, 
-Localization https://github.com/KMU-KDAS/KDAS2025/tree/main/Product/Localization
+-Decision https://github.com/KMU-KDAS/KDAS2025/tree/main/Product/Decision, 
+-Control https://github.com/KMU-KDAS/KDAS2025/tree/main/Product/Control, 
+-ROS https://github.com/KMU-KDAS/KDAS2025/tree/main/Product/Control, 
+-Localization https://github.com/KMU-KDAS/KDAS2025/tree/main/Product/Localization
 
 **🎥 Development Progress Video** (submitted for Quanser’s interim review) briefly explains our system architecture, algorithms, and improvement plan, visually conveying our technical approach.
 
