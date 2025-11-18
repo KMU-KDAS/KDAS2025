@@ -18,6 +18,7 @@ Through this structure, the competition evaluates the **integrated performance**
 - **Objective:** Implement an **urban autonomous taxi scenario** on a **1/10-scale physical platform (QCar 2)** and develop a **revenue-optimization algorithm** that balances efficiency and safety.  
 - **Participating Institutions:** Teams from **49 groups, 36 universities, 18 countries** (e.g., MIT, Purdue University, National University of Singapore, Waseda University, Tsinghua University).  
 - **Stages:**
+- 
   1️⃣ **Stage 1 – Virtual Design & Submission**  
   2️⃣ **Stage 2 – Algorithm Implementation on Physical QCar 2**  
   3️⃣ **Stage 3 – On-site Competition at ACC (Denver, Colorado)**
