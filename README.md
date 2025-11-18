@@ -500,7 +500,7 @@ Because of that, we think this work is best described as:
 
 ---
 
-## [4. First Challenge – Motor Control (PID Autotuning)](Product/Control/Motor Control/)
+## [4. First Challenge – Motor Control (PID Autotuning)](Product/Control/Motor%20Control/)
 
 <img src="images/control18.gif" width="450" alt="Motor Control – PID Autotuning in Simulink"/>
 
@@ -531,7 +531,7 @@ To overcome this inefficiency and uncertainty, we searched for a more systematic
 
 ---
 
-## [5. AEB System Design and Simulation – Matlab_AEB_Unreal](Simulations/Matlab - Unreal Simulation/)
+## [5. AEB System Design and Simulation – Matlab_AEB_Unreal](Simulations/Matlab%20-%20Unreal%20Simulation/)
 
 <img src="images/control19.gif" width="450" alt="AEB Braking Response – Simulated Scenario"/>
 
@@ -910,7 +910,7 @@ In the end, YOLOv8s became a practical module that **directly enabled decisions*
 
 ---
 
-## [10. Simulator Constraints & Early Control – Xytron Preliminary Stage](Competitions/Xytron Competition (Republic of Korea)/)
+## [10. Simulator Constraints & Early Control – Xytron Preliminary Stage](Competitions/Xytron%20Competition%20(Republic%20of%20Korea)/)
 
 
 The preliminary round (Xytron) was held entirely in a simulator, but with **severely limited sensors**:
@@ -1007,7 +1007,7 @@ The question,
 was not merely a technical issue. It taught us that perception outputs must be **translated into the “language of paths”**—a comprehensive reasoning process in its own right.
 
 ---
-## [12. Beginning Trajectory Tracking – Stanley Controller](Product/Control/Steering & Breaking Control/)
+## [12. Beginning Trajectory Tracking – Stanley Controller](Product/Control/Steering%20&%20Breaking%20Control/)
 
 Xytron 대회에서 차량을 처음 실제로 움직여 보았을 때, 우리는 **PID 제어기의 한계**를 즉시 체감했다.
 
@@ -1182,7 +1182,7 @@ This approach is not as elegant as a Kalman Filter and does reduce positional re
 
 ---
 
-## [14. 제어의 진화 – Pure Pursuit, 그리고 MPC](Product/Control/Steering & Breaking Control/)
+## [14. 제어의 진화 – Pure Pursuit, 그리고 MPC](Product/Control/Steering%20&%20Breaking%20Control/)
 
 
 <img src="images/control19.gif" width="450" alt="Control Stack – Pure Pursuit and MPC"/>
@@ -1368,7 +1368,7 @@ waypoint 맵에 **구간 타입 정보**를 포함시켰다.
 
 ---
 
-## [15. Path Planning – Combining RRT and DQN](Product/Decision/path planning/)
+## [15. Path Planning – Combining RRT and DQN](Product/Decision/path%20planning/)
 
 <img src="images/rrt1.png" width="450" alt="RRT Exploration and Global Path Skeleton"/>
 <img src="images/rrt10.png" width="450" alt="Global Path and PH-Based Avoidance Paths"/>
@@ -1657,7 +1657,7 @@ and it represents **one of the most technically complete and mature components**
 
 ---
 
-## [16. Avoidance Maneuver – TDM + TG–PH Hybrid Framework](Product/Control/Avoidance Control/)
+## [16. Avoidance Maneuver – TDM + TG–PH Hybrid Framework](Product/Control/Avoidance%20Control/)
 
 <table>
   <tr>
