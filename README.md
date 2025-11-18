@@ -1188,7 +1188,7 @@ MPC는 Q, R 가중치 설계가 핵심이다.
 - Stanley → Depth 버그로 실행 불가  
 - MPC → 정확한 모델 부족으로 안정성 확보 불가  
 
-**현실적으로 남은 선택지는 단 하나였다: Pure Pursuit**
+현실적으로 남은 선택지는 단 하나였다: **Pure Pursuit**
 
 Pure Pursuit의 장점:
 
@@ -1207,9 +1207,7 @@ Pure Pursuit의 장점:
 
 Pure Pursuit를 실제 주행에 적용하면서 두 가지 문제가 반복되었다.
 
----
-
-#### 1) 직선 구간에서의 흔들림(Oscillation)
+**1) 직선 구간에서의 흔들림(Oscillation)**
 
 원인:
 
@@ -1224,9 +1222,7 @@ Pure Pursuit를 실제 주행에 적용하면서 두 가지 문제가 반복되�
   - Look-ahead 크게 설정  
   - Steering saturation 강하게 적용  
 
----
-
-#### 2) 곡선 구간에서의 안쪽 침투(Inside Drift)
+**2) 곡선 구간에서의 안쪽 침투(Inside Drift)**
 
 원인:
 
