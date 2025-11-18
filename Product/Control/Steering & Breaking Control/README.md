@@ -235,11 +235,11 @@ the system exhibited reduced output spikes and maintained smooth motion.
 <table>
   <tr>
     <td align="center" valign="top">
-      <img src="../../../images/control18.gif" alt="Final Simulation Results" width="400"/><br/>
+      <img src="../../../images/control19.gif" alt="Final Simulation Results" width="400"/><br/>
       <b>Improved Tracking Results</b>
     </td>
     <td align="center" valign="top">
-      <img src="../../../images/control19.gif" alt="Improved Tracking Results" width="400"/><br/>
+      <img src="../../../images/control18.gif" alt="Improved Tracking Results" width="400"/><br/>
       <b>Final Simulation Results</b>
     </td>
   </tr>
