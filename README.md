@@ -728,7 +728,7 @@ and that transition began with this **dynamics modeling** step.
 
 ## 7. ROS2 Integration – Building a Unified System
 
-<img src="images/Ros2.gif" width="450" alt="ROS2 Integration – Multi-Node System"/>
+<img src="images/ROS1.gif" width="450" alt="ROS2 Integration – Multi-Node System"/>
 
 Once individual modules were functioning, our next task was to **integrate them into a single system**. The main difficulty was that each module operated on a completely different time scale:
 
@@ -882,6 +882,8 @@ To do this, we:
 Because our track did not require full four-lane highway detection—only differentiation between opposing single lanes— we simplified the output structure. We adjusted batch size, training schedule, and resolution to match our dataset size and available compute resources, optimizing the training pipeline accordingly.
 
 Through these adjustments, SCNN eventually achieved stable tracking of continuous lanes even in curves and partially missing regions. Compared to our unstable initial models, it was as if scattered points had been smoothly connected into a solid, continuous line.
+ 
+ <img src="images/yolo11.gif" width="450" alt="ROS2 Integration – Multi-Node System"/>
 
 On the object detection side, we needed robust detection of traffic lights and signs. We evaluated multiple object detection architectures and selected **YOLOv8s**, considering the trade-off between accuracy and runtime performance on our embedded platform.
 
