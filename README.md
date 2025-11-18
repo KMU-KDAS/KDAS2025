@@ -1187,6 +1187,19 @@ MATLAB에서 제공하는 여러 경로 추종 예제를 분석하는 과정에�
 
 ---
 
+
+## 14. 제어의 진화 – Pure Pursuit, 그리고 MPC
+
+<img src="images/control19.gif" width="450" alt="Control Stack – Pure Pursuit and MPC"/>
+
+시뮬레이터의 Depth camera 버그로 인하여 정확한 횡오차와 곡률 계산을 하지못하여 Stanly 제어기가 사용이 어려워지자, 우리는 자연스럽게 다음 대안으로 **MPC(Model Predictive Control)** 를 검토하게 되었다.  
+MATLAB에서 제공하는 여러 경로 추종 예제를 분석하는 과정에서, 복잡한 종·횡 통합 제어 문제에서 MPC가 자주 등장한다는 점을 확인했기 때문이다.  
+
+특히 **“예측 기반 최적 제어”** 라는 구조는 충분히 매력적이었다.  
+“우리 차량도 더 정교하게 제어할 수 있지 않을까?”라는 기대도 있었다.
+
+---
+
 ### 14.1 다른 길을 찾다: MPC(Model Predictive Control) 테스트
 
 실제로 MPC는:
@@ -1236,7 +1249,7 @@ MPC가 요구하는 **비용함수(Q, R 가중치)** 설계도 큰 난관이었�
 
 ---
 
-### 14.2 최종 선택: SLAM 위치 + 트랙 waypoint + Pure Pursuit
+### 14.2 최종 선택: SLAM 위치 + Global waypoint + Pure Pursuit
 
 <img src="images/control14.png" width="450" alt="SLAM + Waypoint + Pure Pursuit"/>
 
@@ -1350,6 +1363,13 @@ waypoint 맵에 **구간 타입 정보**를 포함시켰다.
 여러 제어 이론과 구현을 직접 부딪혀 본 끝에,  
 우리가 가진 조건 안에서 **“정말로 끝까지 책임질 수 있는 제어기”** 가 무엇인지를 선택한 결과가  
 바로 이 Pure Pursuit였다.
+
+하지만 Pure Pursuit는 어디까지나 경로를 ‘따라가는’ 제어기일 뿐,
+ 스스로 어디로 가야 하는지, 또는 어떤 waypoint를 생성해야 하는지는 알지 못한다.
+ 따라서 앞으로는
+- RRT를 이용한 경로 생성
+- DQN을 활용한 경로 선택(의사결정)
+과 같은 모듈을 상위 계층에 추가하여, Pure Pursuit가 따라갈 완전한 경로·전략을 구현하기로 결정하였다.
 
 ---
 
