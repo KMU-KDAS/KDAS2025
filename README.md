@@ -1007,115 +1007,123 @@ The question,
 was not merely a technical issue. It taught us that perception outputs must be **translated into the “language of paths”**—a comprehensive reasoning process in its own right.
 
 ---
-## 12. Beginning Trajectory Tracking – Stanley Controller
+# 12. 궤적 추종 제어의 시작 – Stanley Controller
 
-When we first moved the vehicle during the Xytron competition,  
-we immediately **felt the limitations of PID control**.
+Xytron 대회에서 차량을 처음 실제로 움직여 보았을 때, 우리는 **PID 제어기의 한계**를 즉시 체감했다.
 
-- It performed reasonably well on straight segments,  
-- but the moment we entered a corner, **oscillation** and **overshoot** appeared repeatedly,  
-- and the vehicle failed to maintain a stable trajectory.
+- 직선에서는 어느 정도 정상 주행이 가능했지만  
+- 코너 진입 시 **진동**, **오버슈트**, **언더슈트**가 반복되었고  
+- 차량은 안정적인 궤적을 유지하지 못했다  
 
-That was the moment we realized:
+그때 우리는 분명히 깨달았다.
 
-> “Autonomous driving cannot be achieved with simple feedback alone.”
+> **“단순한 피드백 제어만으로는 자율주행을 만들 수 없다.”**
 
-After confirming PID’s limitations, the first structured steering controller we considered was the **Stanley Controller**.
-
----
-
-### 12.1 Initial Stanley Design – SCNN + Depth-Based 3D Waypoints
-
-We chose Stanley for clear reasons:
-
-- It was the steering method used by Stanford’s winning vehicle in the **2005 DARPA Grand Challenge**,  
-- It is well-established for sensor-based waypoint tracking and high-speed stability,  
-- And its design philosophy matched the **real-time, perception-driven** autonomy stack we aimed to implement.
-
-Stanley computes steering using:
-
-- **Cross-track error**  
-- **Heading error**  
-- (in extended forms) **Path curvature**
-
-However, all these quantities assume the existence of **real-world 3D waypoints** in the vehicle’s coordinate frame.
-
-Pixel coordinates from RGB images are insufficient:
-
-- You cannot define true lateral distance  
-- You cannot compute curvature  
-- You cannot calculate world-frame Stanley control terms
-
-Therefore, we concluded that to use Stanley **properly**, we first needed **3D waypoints**.
-
-To achieve this, we designed the following pipeline:
-
-1. **Detect lane masks using SCNN**  
-2. **Estimate real-world distance using the Depth camera**  
-3. **Fuse lane pixels + depth to generate 3D waypoints**  
-4. **Feed these 3D waypoints into the Stanley controller**
-
-If this pipeline worked, Stanley would have been the strongest controller both theoretically and practically.
+PID를 넘어서는 **구조적인 조향 제어기**가 필요했고, 그때 가장 먼저 고려한 것이 바로 **Stanley 제어기**였다.
 
 ---
 
-### 12.2 Unexpected Obstacle – Depth Camera Bug Halts Everything
+## 12.1 Stanley를 위한 첫 설계: SCNN + Depth 기반 3D Waypoint
 
-However, a **critical issue** emerged during experiments:
+<p align="center">
+  <img src="images/control5.png" width="450"/>
+</p>
 
-> The QLabs depth camera suffered from a system-level bug  
-> and failed to produce valid depth values.
+Stanley를 선택한 이유는 명확했다.
 
-The outputs were:
+- **2005 DARPA Grand Challenge 우승 차량의 실제 제어기**  
+- 센서 기반 waypoint 추종에 최적화  
+- 고속 주행에서도 검증된 안정성  
+- 우리가 구축하려는 **센서 기반 실시간 자율주행 구조와 높은 적합성**
 
-- zeros,  
-- infinite values,  
-- random noise,  
-- frame-to-frame instability.
+Stanley 제어기는 다음 값들을 이용하여 조향을 계산한다.
 
-Without valid depth, we could not:
+- 횡오차 (**cross-track error**)  
+- 헤딩 오차 (**heading error**)  
+- 차선 곡률 (**curvature**)  
 
-- convert SCNN pixel coordinates into 3D world coordinates,  
-- compute cross-track error or curvature in real units,  
-- generate any usable Stanley input.
+이 세 요소는 PID보다 훨씬 **기하학적으로 정당한 조향 응답**을 만든다.  
+그러나 문제는 명확했다.
 
-As a result:
+> **이 모든 값은 ‘차량 좌표계 기준의 실세계 경로(3D waypoint)’가 전제되어야 한다는 점이다.**
 
-> Our entire Stanley-based control structure had to be **abandoned at the very first stage**.
+즉, Stanley를 제대로 사용하려면 단순한 이미지 기반 픽셀 좌표가 아니라  
+**월드 좌표계에서 정의된 실제 차선 경로**가 필요했다.
 
----
+이를 해결하기 위해 우리는 **3D waypoint 생성 파이프라인**을 설계했다.
 
-### 12.3 Pivoting the System – From Depth-Based to Localization-Based Waypoints
+1. **SCNN으로 차선 마스크 검출**  
+2. **Depth 카메라로 각 픽셀의 실제 거리 추정**  
+3. **SCNN + Depth를 결합해 3D waypoint 생성**  
+4. **생성된 waypoint를 Stanley 제어기에 입력**
 
-Since depth-derived 3D waypoints were impossible,  
-we shifted our strategy toward **Localization-driven waypoint tracking**.
-
-In other words:
-
-- Instead of generating 3D waypoints from SCNN + Depth,  
-- We chose to rely on **SLAM** for stable pose estimation  
-- And use **predefined global waypoints** on the map  
-- Selecting the nearest waypoint based on the SLAM pose
-
-This shift later became the foundation for the full transition to:
-
-- **SLAM + Global Waypoint navigation**, and  
-- **Pure Pursuit** as the main steering controller.
+이 파이프라인이 정상적으로 작동했다면,  
+Stanley는 이론적으로도 실전에서도 **가장 강력한 조향 제어기**가 될 수 있었다.
 
 ---
 
-### 12.4 Summary
+## 12.2 예상 밖의 장애물 – Depth 카메라 버그로 인한 전면 중단
 
-- PID was unstable in curves  
-- Stanley required **accurate 3D waypoints**  
-- We attempted **SCNN + Depth → 3D waypoints → Stanley**  
-- QLabs Depth camera bug made this **impossible**  
-- The system pivoted to a **Localization + waypoint** structure
+그러나 실험 단계에서 **치명적 문제**가 발생했다.
 
-Stanley did not reach deployment,  
-but its failure directly shaped the direction of the system  
-and led us toward the control architecture that eventually succeeded.
+> **QLabs Depth 카메라가 시스템 버그로 인해 올바른 Depth 값을 제공하지 않았다.**
 
+출력된 값은 다음과 같았다.
+
+- `0`  
+- `∞`  
+- 랜덤 노이즈  
+- 프레임마다 들쭉날쭉한 비정상 값  
+
+즉, **실제 거리 정보가 완전히 무너진 상태**였다.
+
+Depth가 없으면:
+
+- SCNN의 픽셀 좌표 → **월드 좌표 변환 불가**  
+- 월드 좌표 없으면 → **Stanley용 3D waypoint 생성 불가**
+
+결과적으로:
+
+> **Stanley 기반 제어 구조는 초기 단계에서 전면 중단될 수밖에 없었다.**
+
+---
+
+## 12.3 다음 단계 – Waypoint 생성을 위해 Localization에 집중하다
+
+- Stanley를 쓰려면 **3D waypoint가 필요**하고  
+- 3D waypoint를 만들려면 **Depth가 필요**하다.
+
+그러나 Depth는 **구조적으로 불가능한 환경**이었다.  
+따라서 우리는 전략을 전환했다.
+
+- **Depth 기반 waypoint → 불가능**  
+- **Localization 기반 waypoint → 가능**
+
+즉,
+
+- SLAM을 활용하여 차량의 위치를 안정적으로 추정하고  
+- 트랙 전체의 **전역 waypoint 맵**을 구성한 뒤  
+- 현재 위치에서 가장 가까운 waypoint를 추종하는 방식으로 전환했다.
+
+이 결정은 이후
+
+- **Pure Pursuit 선택**,  
+- **SLAM–Waypoint 기반 제어 구조 설계**
+
+로 이어지는 핵심 전환점이 되었다.
+
+---
+
+## 12.4 요약
+
+- PID는 곡률 변화에 매우 취약하여 실전에서 불안정  
+- Stanley는 가장 이론적이고 실전적으로 이상적인 조향 제어기  
+- 이를 위해 **SCNN + Depth 기반 3D waypoint**를 만들 계획이었음  
+- 하지만 **QLabs Depth 버그 → 3D waypoint 생성 불가 → Stanley 중단**  
+- 이후 구조를 **SLAM–Waypoint 기반**으로 재편  
+
+Stanley는 실패했지만,  
+이 실패는 오히려 **가장 현실적이고 견고한 제어 구조**를 찾게 해 준 중요한 전환점이었다.
 
 
 ---
