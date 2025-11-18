@@ -1,6 +1,6 @@
 <img src="images/kdasmain.gif" alt="KDAS" width="800"/>
 
-# KDDAS2025: Kookmin Autonomous Driving System
+# KDAS2025: Kookmin Autonomous Driving System
 
 *Kookmin University Autonomous Driving Research Team – Alpha Project 2024–2025*
 
