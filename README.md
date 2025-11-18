@@ -1269,7 +1269,7 @@ Pure Pursuit를 선택한 이유는
 
 ---
 
-## [14. Localization and Stabilization – SLAM + Kalman Filter](Product/Localization/)
+## 14.Localization and Stabilization – [SLAM](Product/Localization/) + [Kalman Filter](Product/Control/Kalman%20Filter/)
 
 <img src="images/local2.jpg" width="450" alt="SLAM Trajectory with Noise and Stabilization"/>
 
