@@ -1068,7 +1068,7 @@ Stanley는 이론적으로도 실전에서도 가장 강력한 조향 제어기�
 ---
 
 ### 12.2 예상 밖의 장애물 – Depth 카메라 버그로 인한 전면 중단
-<img src="images/depthissue.png" width="450" alt="Quanser's depth problem"/>
+<img src="images/depthissue.png" width="800" alt="Quanser's depth problem"/>
 그러나 실험 과정에서 치명적 문제가 발생했다.
 
 QLabs Depth 카메라가 **올바른 depth 값을 제공하지 않는 버그**가 있었다.
