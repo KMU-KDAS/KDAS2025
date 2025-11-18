@@ -910,7 +910,7 @@ In the end, YOLOv8s became a practical module that **directly enabled decisions*
 
 ---
 
-## [10. Simulator Constraints & Early Control – Xytron Preliminary Stage](Competitions/Xytron%20Competition%20(Republic%20of%20Korea)/)
+## [10. Simulator Constraints & Early Control – Xytron Preliminary Stage](Simulations/Xytron%20Simulation//)
 
 
 The preliminary round (Xytron) was held entirely in a simulator, but with **severely limited sensors**:
