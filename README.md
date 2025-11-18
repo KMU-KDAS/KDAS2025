@@ -526,7 +526,7 @@ After recognizing that the two environments operate on different computation par
 Only after this integration was complete could we apply our designed PID controller to the virtual motor model.
 
 However, the tuning process revealed new issues. Because PID responses change significantly with even small gain adjustments, we had to repeat the cycle of “adjust gain → observe response” many times. Even then, it was difficult to be confident that the chosen gains were truly optimal.
-
+<img src="images/PID3.png" width="450" alt="PID-Autotunning result"/>
 To overcome this inefficiency and uncertainty, we searched for a more systematic method to derive gains and adopted **PID Autotuner**. PID Autotuner computes gains based on the actual system response, providing more stable and consistent control performance compared to manual tuning.
 
 ---
@@ -591,7 +591,7 @@ we needed a **predictive understanding of how the vehicle can actually move** in
 This is where our dynamics modeling began.
 
 ---
-
+<img src="images/aebd2.jpeg" width="600" alt="Modeling & Simulation (AEB/QCar Dynamics)"/>
 ### 6.1 First Model – Understanding “How a Car Moves” with the Bicycle Model
 
 In the early phase, we used MATLAB’s built-in **Bicycle Vehicle Model**.  
@@ -912,7 +912,7 @@ In the end, YOLOv8s became a practical module that **directly enabled decisions*
 
 ## [10. Simulator Constraints & Early Control – Xytron Preliminary Stage](Simulations/Xytron%20Simulation//)
 
-
+<img src="images/xyts2.png" width="450" alt="Xytron - control"/>
 The preliminary round (Xytron) was held entirely in a simulator, but with **severely limited sensors**:
 
 - 180° front LiDAR, and  
@@ -1049,6 +1049,8 @@ Stanley 제어기는 다음 값들을 이용하여 조향을 계산한다.
 
 즉, Stanley를 제대로 사용하려면 단순한 이미지 기반 픽셀 좌표가 아니라  
 **월드 좌표계에서 정의된 실제 차선 경로**가 필요했다.
+
+<img src="images/depth1.png" width="450" alt="SCNN + Depth-Based 3D waypoints"/>
 
 이를 해결하기 위해 우리는 **3D waypoint 생성 파이프라인**을 설계했다.
 
@@ -1463,6 +1465,7 @@ we decided to use **RRT as a sampling-based path generator**.
 
 ### 15.3 How We Applied RRT – Offline, Segmented, and Smoothed
 
+<img src="images/rrt11.png" width="450" alt="RRT- smoothing"/>
 #### 1) Why run RRT offline?
 
 We did **not** use RRT as a real-time online planner that generates paths during driving.  
@@ -1476,6 +1479,7 @@ So we changed the strategy:
 
 > “Run RRT **offline** multiple times,  
 > and only keep the **best paths**.”
+
 
 The selected paths were then processed with:
 
