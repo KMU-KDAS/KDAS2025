@@ -265,7 +265,7 @@ The core of this project was the belief that we could build real technology with
 
 
 ---
-## [3. Hardware System – “How do we bring an autonomous driving stack into the real world?”](KDAS2025/Product/Circuit/)
+## [3. Hardware System – “How do we bring an autonomous driving stack into the real world?”](Product/Circuit/)
 
 <img src="images/cir.png" width="450" alt="Circuit"/>
 
