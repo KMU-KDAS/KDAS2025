@@ -1172,21 +1172,7 @@ Thus, we decided to **truncate** SLAM coordinates to one decimal place, effectiv
 
 This approach is not as elegant as a Kalman Filter and does reduce positional resolution. However, it significantly suppressed overreactions in control and produced **stable and consistent behavior** in real driving.
 
-
 ---
-
-## 14. 제어의 진화 – Pure Pursuit, 그리고 MPC
-
-<img src="images/control19.gif" width="450" alt="Control Stack – Pure Pursuit and MPC"/>
-
-Stanley 제어기의 적용이 어려워지자, 우리는 자연스럽게 다음 대안으로 **MPC(Model Predictive Control)** 를 검토하게 되었다.  
-MATLAB에서 제공하는 여러 경로 추종 예제를 분석하는 과정에서, 복잡한 종·횡 통합 제어 문제에서 MPC가 자주 등장한다는 점을 확인했기 때문이다.  
-
-특히 **“예측 기반 최적 제어”** 라는 구조는 충분히 매력적이었다.  
-“우리 차량도 더 정교하게 제어할 수 있지 않을까?”라는 기대도 있었다.
-
----
-
 
 ## 14. 제어의 진화 – Pure Pursuit, 그리고 MPC
 
