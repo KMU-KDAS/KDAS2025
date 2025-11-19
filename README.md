@@ -676,6 +676,8 @@ We had to include these terms so that modules like SLAM, evasive maneuvers, and 
 
 #### ③ On a Low-Mass Platform, Small Slip Still Matters
 
+<img src="images/aebd4.png" alt="Tire Slip" width="800"/>
+
 On a 1/10-scale, low-mass platform,  
 even small amounts of slip can produce meaningful differences  
 between the true vehicle speed and the speed reported by sensors.
