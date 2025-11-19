@@ -608,6 +608,7 @@ This is where our dynamics modeling began.
 
 ---
 <img src="images/aebd2.jpeg" width="600" alt="Modeling & Simulation (AEB/QCar Dynamics)"/>
+
 ### 6.1 First Model – Understanding “How a Car Moves” with the Bicycle Model
 
 In the early phase, we used MATLAB’s built-in **Bicycle Vehicle Model**.  
