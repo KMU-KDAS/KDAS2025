@@ -1142,141 +1142,153 @@ Depth가 없으면:
 
 ---
 
-## 13. 제어의 진화 – [Pure Pursuit](Product/Control/Steering%20&%20Breaking%20Control/), 그리고 [MPC](Product/Control/MPC/)
+## 13. Evolution of Control – [Pure Pursuit](Product/Control/Steering%20&%20Breaking%20Control/) and [MPC](Product/Control/MPC/)
 <img src="images/control19.gif" width="450" alt="Control Stack – Pure Pursuit and MPC"/>
 
-Depth 카메라 버그로 인해 Stanley 제어기가 불가능해지자, 우리는 다음 대안으로 **MPC(Model Predictive Control)**을 검토했다.
+Due to the depth camera bug, the Stanley controller became infeasible, so our next candidate was **MPC (Model Predictive Control)**.
 
-MATLAB의 다양한 경로 추종 예제를 분석하는 과정에서  
-종·횡 통합 제어 문제에서 MPC가 널리 사용되는 것을 확인했기 때문이다.
+While analyzing various MATLAB path-tracking examples,  
+we repeatedly found MPC being used for combined longitudinal–lateral control.
 
-"예측 기반 최적 제어"라는 구조는 충분히 매력적이었다.
-
----
-
-### 13.1 다른 길을 찾다: MPC(Model Predictive Control) 테스트
-
-MPC는:
-
-- 미래 상태 예측  
-- 조향·가속·제약조건을 동시에 고려  
-- 예측 지평선 내에서 최적 입력 선택  
-
-이론적으로 우리가 원하던 “부드럽고 예측적인 제어”에 가장 가까웠다.
-
-그러나 구현 과정에서 다음과 같은 벽이 나타났다.
-
-#### 1) 가장 큰 문제: 정확한 차량 모델의 부재
-MPC는 모델 오차에 극도로 민감하다.  
-하지만 아래 파라미터들을 정확히 알 수 없었다.
-
-- 타이어 cornering stiffness  
-- 관성모멘트 \(I_{zz}\)  
-- 실제 조향·가속 응답  
-
-이 값들은 문서로 제공되지 않았고,  
-실험적으로 추정할 시간과 설비도 없었다.
-
-즉,  
-**“모델이 있어야 쓸 수 있는 제어기인데, 신뢰할 모델을 만들 수 없는 환경”**이었다.
-
-#### 2) 비용함수(cost function) 설계의 난관
-MPC는 Q, R 가중치 설계가 핵심이다.  
-하지만 모델이 정확하지 않으니:
-
-- 어떤 Q/R 조합도 일관된 결과를 내지 못함  
-- 튜닝 기준이 존재하지 않음  
-
-결과적으로,
-
-- MPC는 강력하지만  
-- 학부 장비·시간·모델링 제약 속에서는 "대회용 안정성" 확보가 불가능한 제어기였다.
-
-그래서 MPC는 최종적으로 제외했다.
+The structure of **“prediction-based optimal control”** was extremely appealing.
 
 ---
 
-### 13.2 최종 선택: Pure Pursuit + Global Waypoints + Localization
+### 13.1 Looking for Another Path: Testing MPC (Model Predictive Control)
+
+MPC:
+
+- predicts future states  
+- considers steering, acceleration, and constraints simultaneously  
+- selects the optimal input over a prediction horizon  
+
+In theory, it was the closest to the “smooth and predictive control” we wanted.
+
+However, during implementation we encountered the following barriers.
+
+#### 1) The Biggest Issue: Lack of an Accurate Vehicle Model
+MPC is highly sensitive to model errors.  
+Yet the following parameters were essentially unknown:
+
+- tire cornering stiffness  
+- yaw moment of inertia \(I_{zz}\)  
+- true steering and acceleration response  
+
+These values were not provided in documentation,  
+and we did not have enough time or equipment to estimate them experimentally.
+
+In other words,  
+we faced the situation:
+
+> **“This controller only works if you have a good model, but we cannot build a model we trust.”**
+
+#### 2) Difficulties in Designing the Cost Function
+In MPC, designing the Q and R weights is crucial.  
+But since the model was inaccurate:
+
+- no Q/R combination produced consistent behavior  
+- there was no reliable tuning criterion  
+
+In conclusion:
+
+- MPC is powerful,  
+- but under undergraduate-level constraints in equipment, time, and modeling,  
+  it was impossible to guarantee the “competition-grade stability” we needed.
+
+Therefore, MPC was ultimately excluded from the final controller set.
+
+---
+
+### 13.2 Final Choice: Pure Pursuit + Global Waypoints + Localization
 <img src="images/control14.png" width="450" alt="SLAM + Waypoint + Pure Pursuit"/>
-정리하면:
 
-- Stanley → Depth 버그로 실행 불가  
-- MPC → 정확한 모델 부족으로 안정성 확보 불가  
+Summarizing:
 
-현실적으로 남은 선택지는 단 하나였다: **Pure Pursuit**
+- Stanley → infeasible due to depth camera bug  
+- MPC → unable to guarantee stability due to lack of an accurate model  
 
-Pure Pursuit의 장점:
+Realistically, only one option remained: **Pure Pursuit**.
 
-- 정밀한 3D 차선 정보 불필요  
-- 고차 차량 동역학 모델 불필요  
-- look-ahead point만으로 안정적인 조향 가능  
-- 계산량 적어 실시간성 우수  
+Advantages of Pure Pursuit:
 
-즉,  
-우리의 센싱 환경, 모델링 제약, 시뮬레이터 환경, 대회 규칙을 모두 고려했을 때  
-**Pure Pursuit는 가장 단순하면서 가장 안정적인 유일한 선택이었다.**
+- does not require precise 3D lane geometry  
+- does not require a high-order vehicle dynamics model  
+- can generate stable steering using only a look-ahead point  
+- low computational cost and excellent real-time performance  
 
----
-
-### 13.3 Pure Pursuit의 문제점과 해결 전략
-
-Pure Pursuit를 실제 주행에 적용하면서 두 가지 문제가 반복되었다.
-
-**1) 직선 구간에서의 흔들림(Oscillation)**
-
-원인:
-
-- 작은 오차도 과도하게 조향 반영  
-- 핸들이 좌우로 흔들림  
-
-해결 전략:
-
-- 트랙을 직선 / 곡선 구간으로 분리  
-- waypoint 맵에 구간 타입 포함  
-- 직선에서는  
-  - Look-ahead 크게 설정  
-  - Steering saturation 강하게 적용  
-
-**2) 곡선 구간에서의 안쪽 침투(Inside Drift)**
-
-원인:
-
-- 곡선에서 look-ahead가 너무 길면 직선처럼 추종  
-- 차량이 코너 안쪽으로 말림  
-- 속도 높을수록 언더스티어 증가  
-
-해결 전략:
-
-- 곡선에서는  
-  - Look-ahead 짧게 설정  
-  - Target velocity 낮게 설정  
-
-이를 통해:
-
-- 곡률 변화에 더 빠르게 대응  
-- 조향 여유 확보  
-
-서로 다른 구간별 튜닝을 적용한 Pure Pursuit는  
-직선 진동 문제와 곡선 안쪽 침투 문제를 모두 해결하며  
-안정적 waypoint 추종을 달성했다.
+Thus,  
+considering our sensing setup, modeling limitations, simulator environment, and competition rules,  
+**Pure Pursuit was the simplest yet only robust choice.**
 
 ---
 
-### 13.4 결론 – 여러 실패 끝에 얻은 가장 현실적인 해답
+### 13.3 Issues in Pure Pursuit and Our Mitigation Strategy
 
-우리는 여러 제어기를 적용하고 실패하는 과정을 통해 다음 결론에 도달했다.
+When we applied Pure Pursuit to real driving, two issues appeared repeatedly.
 
-- Depth 버그 → Stanley 불가능  
-- 모델 부족 → MPC 불가능  
-- Global waypoint와 Localization 기반에서 안정적인 제어 → Pure Pursuit뿐  
+**1) Oscillation on Straight Segments**
 
-Pure Pursuit를 선택한 이유는  
-“가장 간단해서”가 아니라  
-**우리 환경에서 유일하게 책임질 수 있는 제어기였기 때문**이다.
+Cause:
 
-하지만 Pure Pursuit는 “주어진 경로를 따라가기만 하는 제어기”이므로  
-우리는 이후 강화학습 기반 Path Planning과  
-고정확도 Localization의 중요성을 더욱 절실하게 깨닫게 되었다.
+- even small errors were translated into overly large steering commands  
+- the steering wheel oscillated left and right  
+
+Mitigation strategy:
+
+- classify the track into straight vs. curved sections  
+- embed segment type information in the waypoint map  
+- for straight segments:  
+  - use a large look-ahead distance  
+  - apply stronger steering saturation  
+
+**2) Inside Drift on Curved Segments**
+
+Cause:
+
+- if the look-ahead distance is too long in a curve, the controller behaves as if tracking a straight line  
+- the vehicle cuts into the inside of the curve  
+- at higher speeds, understeer becomes more severe  
+
+Mitigation strategy:
+
+- for curved segments:  
+  - use a shorter look-ahead distance  
+  - set a lower target velocity  
+
+This allowed us to:
+
+- respond more quickly to curvature changes  
+- secure sufficient steering authority  
+
+With different tuning strategies for straight and curved sections,  
+Pure Pursuit overcame both straight-line oscillation and inside drift,  
+achieving stable waypoint tracking.
+
+---
+
+### 13.4 Conclusion – The Most Realistic Answer After Many Failures
+
+After trying and failing with several controllers, we arrived at the following conclusion:
+
+- depth camera bug → Stanley infeasible  
+- insufficient model accuracy → MPC infeasible  
+- stable control based on global waypoints and localization → achievable only with Pure Pursuit  
+
+We did **not** choose Pure Pursuit simply because “it is the easiest”.  
+We chose it because:
+
+> **It was the only controller we could responsibly rely on under our conditions.**
+
+At the same time, Pure Pursuit is fundamentally a **tracking** controller:  
+it follows a given path, but does not decide where to go.
+
+This experience made us acutely aware of the importance of:
+
+- reinforcement-learning-based path planning, and  
+- high-accuracy localization,
+
+on top of Pure Pursuit.
+
 
 ---
 
