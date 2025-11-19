@@ -1306,131 +1306,141 @@ on top of Pure Pursuit.
 
 ---
 
-## 14. [Localization (SLAM)](Product/Localization/) and [Stabilization (Kalman Filter)](Product/Control/Kalman%20Filter/)
+## 14. Localization (SLAM) and Stabilization (Kalman Filter)
 
 <img src="images/local2.jpg" width="450" alt="SLAM Trajectory with Noise and Stabilization"/>
 
->“내가 어디 있는지 모르면, 어디로 가야 하는지도 모른다.”  
+> “If I don't know where I am, I can't know where to go.”
 
-자율주행 제어는 결국 이 단순한 문장으로부터 출발한다.  
-사람이 주변 건물과 도로 형태, 지나온 경로를 바탕으로 현재 위치를 추론하듯,  
-차량도 센서 데이터를 기반으로 지금 내가 어디에 있는지를 정확히 이해해야만 다음 행동을 결정할 수 있다.
+Autonomous vehicle control ultimately begins from this simple statement.  
+Just as humans infer their location from surrounding buildings, road structures, and the path they have traveled,  
+an autonomous vehicle must also understand **where it currently is** in order to decide **what to do next**.
 
-초기 단계에서 우리는 IMU 적분과 오도메트리를 사용해 주행 궤적을 추정했다.  
-하지만 시간이 지날수록 드리프트가 누적되며, 위치 추정은 금방 무너졌다.  
-여기서 우리는 질문을 던졌다.
+In the early stage of development, we estimated the trajectory using **IMU integration** and **odometry**.  
+However, drift accumulated rapidly over time, and the position estimate collapsed.  
+This naturally raised an important question:
 
-> “지도를 만들면서 동시에 위치를 추정할 수는 없을까?”
+> “Is it possible to build the map *and* estimate my position at the same time?”
 
-이 질문의 답은 곧 **SLAM(Simultaneous Localization and Mapping)**이었다.
-
----
-
-### 14.1 SLAM의 도입 – 지도와 위치를 동시에 해결하다
-
-SLAM은 센서 데이터를 기반으로  
-- 주변 환경의 특징을 추출하고  
-- 그 특징으로 지도를 구성하며  
-- 동시에 지도 위에서 자신의 위치를 추정한다  
-
-이 세 가지를 동시에 수행하는 알고리즘이다.
-
-하지만 완전한 SLAM을 처음부터 직접 구현하는 것은 실현 불가능했다.  
-지도교수님과 논의 끝에, **오픈소스 SLAM 알고리즘을 분석하고 QCar2 환경에 맞게 적용하는 방향**으로 전략을 세웠다.
-
-TurtleBot 예제와 여러 자율주행 사례들을 분석한 결과, 가장 널리 쓰이는 선택지는 다음과 같았다.
-
-- **AMCL** – 사전 구축된 지도가 필요하지만 위치 추정 성능 우수  
-- **Cartographer** – LiDAR만으로 지도 생성과 위치 추정을 동시에 수행 가능  
-
-폐회로 기반 트랙 환경에서 “지도 생성”과 “자기 위치 추정”을 동시에 해결해야 했던 우리는 **Cartographer를 선택**했다.  
-적용 결과, 비교적 정확하고 안정적인 위치 추정을 달성할 수 있었다.
+The answer was **SLAM (Simultaneous Localization and Mapping)**.
 
 ---
 
-### 14.2 오차의 보정 – “조금 더 정확한 위치를 얻을 수는 없을까?”
+### 14.1 Introducing SLAM – Solving Mapping and Localization Together
 
-센서 데이터에는 언제나 노이즈가 존재하며, 그 노이즈는 SLAM의 단기적인 오차를 만들기도 했다.  
-또한 MATLAB 예제들에서 **Kalman Filter로 노이즈를 안정화하는 방식**을 본 경험도 있었기에, 자연스럽게 이렇게 생각했다.
+SLAM uses sensor data to:
 
-> “SLAM이 주는 pose를 Kalman Filter로 한 번 더 다듬으면 더 부드럽고 정확한 위치 추정이 되지 않을까?”
+- extract environmental features  
+- construct a map from those features  
+- estimate the robot’s pose within that map  
 
-이 기대감으로 우리는 **SLAM 후처리에 Kalman Filter를 적용하는 실험**을 시작했다.
+and performs all three simultaneously.
 
----
+Implementing a full SLAM system from scratch was unrealistic.  
+After discussions with our advisor, we decided to **adopt and adapt existing open-source SLAM solutions** for the QCar2 environment.
 
-### 14.3 Kalman Filter 시도 – 그리고 마주한 근본적인 난관들
+From analyzing TurtleBot examples and other robotics case studies, the most widely used options were:
 
-그러나 실험은 예상한 방향으로 흘러가지 않았다.  
-그 이유는 단 하나의 문장으로 요약할 수 있었다.
+- **AMCL** – requires a pre-built map but provides strong localization  
+- **Cartographer** – builds the map and localizes simultaneously using only LiDAR  
 
-> **Kalman Filter는 ‘단순 노이즈 제거기’가 아니라, 정확한 모델들을 기반으로 현재 측정값을 보완하여 더 신뢰도를 높이는 상태 추정기다.**
-
-따라서 정상적으로 작동하기 위해서는 다음 요소들이 정확해야 한다.
-
-- 상태 전이 모델 (차량 동역학)  
-- 관측 모델 (센서 측정이 실제 상태와 어떤 관계인지)  
-- 노이즈 공분산 \(Q, R\) 의 통계적 특성  
-
-문제는 이 세 가지를 학부생 수준에서는 **거의 설계할 수 없었다**는 것이다.
-
-#### (1) 동역학 모델이 정확하지 않다
-
-우리 차량(QCar2)의 실제 움직임은 단순 모델이 아니라 다음 요소들의 영향을 받는다.
-
-- 타이어 슬립  
-- 코너링 강성  
-- 모멘트 오브 이너시아  
-
-이 값들은 정확히 측정하기도 어렵고 Quanser에서도 제공하지 않았다.  
-이 값들이 조금만 틀어져도 Kalman Filter는 **오히려 오차를 키우는 방향**으로 움직였다.
-
-#### (2) 가장 큰 난관 – “노이즈 모델을 어떻게 만들어야 하는지 알 수 없다”
-
-우리가 직면한 가장 본질적인 문제는 **센서 노이즈 모델링 방법을 알 수 없었다**는 점이었다.
-
-일반 예제들은 다음과 같은 가정을 한다.
-
-- 가우시안 분포  
-- 독립 노이즈  
-- 선형 관측 모델  
-
-하지만 실제 LiDAR 노이즈는 이런 단순한 형태와는 전혀 다르다.  
-분포를 직접 통계적으로 측정할 방법도 없었고, 이를 위한 데이터셋을 만들 능력도 없었다.
-
-즉, 학부생 입장에서 노이즈 공분산 \(R\) 을 설계한다는 것은 다음과 다르지 않았다.
-
-> “어떤 숫자를 넣어야 하는지 기준도 없고, 어떤 분포인지 알 방법도 없다.”
-
-우리는 **노이즈 모델을 모르는 상태에서 Kalman Filter를 억지로 적용**하고 있었던 것이다.
-
-#### (3) 실제 결과 – 오차 증가
-
-동역학 모델과 센서 노이즈 모델 모두 부정확하자 Kalman Filter는 기대와 정반대의 결과를 냈다.
-
-- SLAM 단독보다 오히려 더 불안정하고  
-- 더 부정확한 위치 추정이 생성되었다  
-
-제대로 된 모델 없이 Kalman Filter를 적용하는 것은  
-**기초가 약한 건물 위에 복잡한 구조물을 올리는 것과 같았다.**
+Because our track was a closed-loop indoor environment where both **mapping** and **localization** were required,  
+we selected **Cartographer**.  
+It achieved relatively accurate and stable position estimation for our system.
 
 ---
 
-### 14.4 복잡함 대신 실전적 안정성 – SLAM 좌표 소수점 드랍
+### 14.2 A Desire for Better Accuracy — “Can we refine SLAM even further?”
 
-이때 우리는 방향을 완전히 전환했다.  
-부정확한 예측 모델 위에 Kalman Filter를 억지로 올리기보다,  
-**SLAM 결과를 직접적으로 안정화하는 단순하고 확실한 방법**을 선택했다.
+Sensor data always includes noise, which introduced momentary instability in SLAM output.  
+During earlier MATLAB studies, we encountered examples using a **Kalman Filter** to stabilize noisy measurements.
 
-바로 **SLAM 위치 좌표의 소수점을 dropping하는 방법**이다.
+Naturally, a question arose:
 
-이 방식은 이론적으로는 우아하지 않지만,  
-실제 주행 상황에서는 제어기의 과민 반응을 억제하는 데 매우 효과적이었다.  
-결과적으로 Kalman Filter보다 간단하면서도 훨씬 실전적인 안정성을 제공했다.
+> “If we apply a Kalman Filter after SLAM, wouldn’t the pose estimate become smoother and more accurate?”
+
+Inspired by this idea, we attempted to apply a **Kalman Filter as a post-processing layer** over SLAM output.
 
 ---
 
-## 15 Path Planning – Combining [RRT](Product/Decision/Path%20Planning/RRT/) and [DQN](Product/Decision/Path%20Planning/DQN/)
+### 14.3 Attempting the Kalman Filter — and Confronting Fundamental Issues
+
+The experiment did not unfold as expected.  
+Everything boiled down to a single principle:
+
+> **A Kalman Filter is not a ‘noise remover’; it is a state estimator that requires accurate models.**
+
+To work properly, it requires:
+
+- an accurate **state transition model** (vehicle dynamics)  
+- an accurate **observation model** (how sensor measurements relate to the true state)  
+- realistic **noise covariance matrices** \(Q\) and \(R\)  
+
+At the undergraduate level, we could not reliably build any of these.
+
+---
+
+#### (1) The vehicle dynamics model was not accurate
+
+Our QCar2’s real motion depends on complex physical variables:
+
+- tire slip  
+- cornering stiffness  
+- moment of inertia \(I_{zz}\)  
+
+These values were not provided by the manufacturer, and we had no practical means to measure them accurately.  
+Even small errors in these parameters caused the Kalman Filter to **increase** the estimation error rather than reduce it.
+
+---
+
+#### (2) The biggest challenge — “We do not know how to model the sensor noise”
+
+We discovered that the most fundamental obstacle was our inability to model realistic noise.  
+Typical examples assume:
+
+- Gaussian noise  
+- independence  
+- linearity  
+
+But real LiDAR noise is **not Gaussian**, **not independent**, and **not linear**, and we had no dataset to characterize it.
+
+Designing the noise covariance \(R\) was essentially equivalent to:
+
+> “Choosing numbers without any statistical justification.”
+
+We were applying a Kalman Filter **without knowing the noise model**, which defeats the purpose of using the filter.
+
+---
+
+#### (3) Actual result — performance got worse
+
+With inaccurate dynamics and noise models, the Kalman Filter behaved exactly as theory predicts:
+
+- less stable than SLAM alone  
+- less accurate  
+- sometimes significantly divergent  
+
+Applying a Kalman Filter on top of an unreliable model is like  
+**building a complex structure on a weak foundation** — the result becomes worse, not better.
+
+---
+
+### 14.4 Choosing Practical Stability Over Theoretical Complexity — Decimal Truncation
+
+At this point, we changed direction.  
+Instead of forcing a Kalman Filter over poor models, we adopted a **simple, robust, and practical approach**:
+
+> **We stabilized SLAM output by dropping excessive decimal precision from the pose.**
+
+This method is not theoretically elegant,  
+but in real-world control it effectively suppressed over-reactive steering due to tiny SLAM fluctuations.  
+In practice, it provided **far more stable behavior than the Kalman Filter**,  
+with zero additional modeling assumptions.
+
+
+---
+
+## 15. Path Planning – Combining [RRT](Product/Decision/Path%20Planning/RRT/) and [DQN](Product/Decision/Path%20Planning/DQN/)
 
 <img src="images/rrt1.png" width="450" alt="RRT Exploration and Global Path Skeleton"/>
 <img src="images/rrt10.png" width="450" alt="Global Path and PH-Based Avoidance Paths"/>
