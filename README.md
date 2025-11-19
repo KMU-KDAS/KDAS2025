@@ -563,7 +563,7 @@ To this end, we integrated **MATLAB/Simulink** with **Unreal Engine 3**, buildin
 
 could be aligned on a single time axis, closely approximating real driving conditions.
 
-<img src="images/Overview1.png" width="450" alt="AEB System"/>
+<img src="images/Overview1.png" width="900" alt="AEB System"/>
 
 The essence of AEB design lies not in “braking itself,” but in determining **when** to start braking—that is, in **prediction**.
 
@@ -1063,6 +1063,8 @@ Stanley 제어기는 다음 값들을 이용해 조향을 계산한다.
 이 변수들은 단순한 오차 피드백 구조인 PID와 달리  
 분명한 기하학적 해석을 가진다는 점에서 큰 장점이 있었다.  
 하지만 여기서 구조적인 문제가 드러났다.
+
+---
 
 ### 12.2 2D 정보의 구조적 한계
 
