@@ -1569,6 +1569,14 @@ We therefore changed the strategy:
   - → load the precomputed node sequence,  
   - → start driving immediately.
 
+<p align="center">
+  <img src="images/dqn3.png" alt="DQN scenario 2 path" width="750"/>
+</p>
+
+<p align="center">
+  <img src="images/dqn4.png" alt="DQN scenario 2 result" width="750"/>
+</p>
+
 This converted DQN from an online planner into an **offline policy generator** and  
 significantly improved operational efficiency.
 
