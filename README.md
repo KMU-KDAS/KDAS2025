@@ -1299,6 +1299,7 @@ on top of Pure Pursuit.
 <img src="images/local2.jpg" width="450" alt="SLAM Trajectory with Noise and Stabilization"/>
 
 >“내가 어디 있는지 모르면, 어디로 가야 하는지도 모른다.”  
+
 자율주행 제어는 결국 이 단순한 문장으로부터 출발한다.  
 사람이 주변 건물과 도로 형태, 지나온 경로를 바탕으로 현재 위치를 추론하듯,  
 차량도 센서 데이터를 기반으로 지금 내가 어디에 있는지를 정확히 이해해야만 다음 행동을 결정할 수 있다.
