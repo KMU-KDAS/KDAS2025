@@ -1266,53 +1266,117 @@ Pure Pursuit를 선택한 이유는
 
 <img src="images/local2.jpg" width="450" alt="SLAM Trajectory with Noise and Stabilization"/>
 
-> “If I don’t know where I am, I can’t know where to go.”
+“내가 어디 있는지 모르면, 어디로 가야 하는지도 모른다.”  
+자율주행 제어는 결국 이 단순한 문장으로부터 출발한다.  
+사람이 주변 건물과 도로 형태, 지나온 경로를 바탕으로 현재 위치를 추론하듯,  
+차량도 센서 데이터를 기반으로 지금 내가 어디에 있는지를 정확히 이해해야만 다음 행동을 결정할 수 있다.
 
-Vehicle control begins with **accurate self-localization**. Just as humans construct a mental map and infer their current position from buildings, road shapes, and traveled routes, autonomous vehicles must make similar judgments based on sensor data.
+초기 단계에서 우리는 IMU 적분과 오도메트리를 사용해 주행 궤적을 추정했다.  
+하지만 시간이 지날수록 드리프트가 누적되며, 위치 추정은 금방 무너졌다.  
+그리고 자연스럽게 이런 질문에 도달했다.
 
-Initially, we used **IMU integration** and **odometry** to estimate the trajectory. Over time, however, accumulated drift made it impossible to maintain accurate position estimates.
+“지도를 만들면서 동시에 위치를 추정할 수는 없을까?”
 
-We asked:
+이 질문의 답은 곧 **SLAM(Simultaneous Localization and Mapping)** 이었다.
 
-> “Can we build the map and localize ourselves at the same time?”
+---
 
-The answer was **SLAM (Simultaneous Localization and Mapping)**.
+### 14.1 SLAM의 도입 – 지도와 위치를 동시에 해결하다
 
-SLAM uses sensor measurements to recognize environmental features and simultaneously:
+SLAM은 센서 데이터를 기반으로 다음 과정을 동시에 수행한다.
 
-- builds a map, and  
-- estimates the vehicle’s pose within that map.
+- 주변 환경의 특징(feature) 추출  
+- 그 특징으로 지도를 구성  
+- 지도 위에서 자신의 위치를 추정  
 
-Implementing a complete SLAM system from scratch was not feasible within our constraints. In consultation with our advisor, we decided to analyze existing open-source SLAM solutions and adapt them to our environment instead.
+이 세 가지를 동시에 수행하는 알고리즘이다.
 
-From TurtleBot examples and various autonomous driving case studies, we found that **AMCL** and **Cartographer** were widely used:
+하지만 SLAM을 처음부터 직접 구현하는 것은 실현 불가능했다.  
+지도교수님과 논의 끝에, 우리는 오픈소스 SLAM 알고리즘을 분석하고 QCar2 환경에 맞게 적용하는 방향으로 전략을 세웠다.
 
-- **AMCL** excels at probabilistic localization but requires a pre-built map.  
-- **Cartographer** can build the map and localize in real time using only LiDAR, making it better suited to our closed-track environment.
+TurtleBot 예제와 다양한 자율주행 사례를 분석한 결과, 실무에서 널리 쓰이는 선택지는 두 가지였다.
 
-We chose **Cartographer** and achieved relatively accurate real-time pose estimates.
+- **AMCL** – 사전 구축된 지도가 필요하지만 위치 추정 성능이 뛰어남  
+- **Cartographer** – LiDAR만으로 지도 생성 + 위치 추정을 동시 수행  
 
-However, in real-world operation, LiDAR noise and sensor timing offsets caused small fluctuations in the estimated pose. These fluctuations destabilized the controller and led to excessive corrections.
+폐회로 기반 트랙 환경에서 지도 생성과 자기위치추정이 모두 필요했던 우리는 **Cartographer**를 선택했다.  
+적용 결과, 안정적이고 비교적 정확한 위치 추정을 얻을 수 있었다.
 
-We had previously seen MATLAB examples that applied **Kalman Filters** to stabilize noisy sensor data. This led to the idea:
+---
 
-> “Can we apply a similar approach to stabilize SLAM-based pose estimates?”
+### 14.2 실전에서 드러난 새로운 문제 – Jitter
 
-We started experiments combining SLAM outputs with Kalman Filtering. In practice, however, results were not as consistent as we hoped:
+하지만 실제 주행에서는 새로운 문제가 나타났다.  
+SLAM의 위치 추정은 전체적으로 정확했지만, 프레임 간 **미세한 흔들림(jitter)** 이 발생했다.
 
-- Designing an accurate prediction model was challenging at the undergraduate level.
-- Model inaccuracies sometimes made the situation worse instead of better.
+이 jitter의 원인은 명확했다.
 
-We learned the hard way that **poorly modeled complex filters can degrade performance**.
+- LiDAR 스캔 노이즈  
+- 차량 진동에 따른 미세 오차  
 
-For this project, we chose a simpler but more robust method. We observed that:
+이 작은 흔들림은 제어기 입장에서 큰 오차로 해석되며,  
+결과적으로 **과도한 조향 수정 → 조향 진동 → 궤적 불안정** 으로 이어졌다.
 
-- major jitter occurred from the second decimal place of SLAM coordinates, and  
-- its magnitude was around **0.1 m**, significantly smaller than the vehicle length (**0.3 m**).
+그래서 떠오른 생각은 자연스럽게 다음과 같았다.
 
-Thus, we decided to **truncate** SLAM coordinates to one decimal place, effectively quantizing the pose with 0.1 m resolution.
+“SLAM 출력에 Kalman Filter를 결합하면 안정화할 수 있지 않을까?”
 
-This approach is not as elegant as a Kalman Filter and does reduce positional resolution. However, it significantly suppressed overreactions in control and produced **stable and consistent behavior** in real driving.
+---
+
+### 14.3 Kalman Filter 시도 – 그리고 예상 밖의 난관들
+
+MATLAB 실습에서 센서 노이즈를 Kalman Filter로 안정화하는 예제를 본 기억 때문에  
+우리는 “SLAM jitter도 Kalman으로 잡을 수 있지 않을까?”라는 기대를 갖고 실험을 시작했다.
+
+그러나 실험은 곧 예상과 다른 방향으로 흘러갔다.  
+가장 먼저 깨달은 사실은 다음이었다.
+
+**Kalman Filter는 단순한 노이즈 제거기가 아니라,  
+정확한 모델을 가진 시스템에서만 제대로 작동하는 필터**다.
+
+즉, 다음 요소들이 모두 매우 정확해야 한다.
+
+- 상태 전이 모델(차량 동역학)  
+- 관측 모델  
+- 잡음 공분산 Q, R  
+- 센서 타이밍 동기화  
+
+현실의 차량 환경에서는 이 조건들을 만족시키기 결코 쉬운 일이 아니었다.
+
+우리 차량의 동역학 모델은 학부 수준에서 정확히 측정하기 어려운 요소들로 구성되어 있었다.
+
+- 타이어 슬립, 코너링 강성  
+- 모멘트 오브 이너시아  
+- 모터–ESC 응답 지연  
+- 기구적 백래시 등 비선형 요소  
+
+이 값들은 실험적으로 추정하기 어렵고 문헌값 그대로 사용할 수도 없었다.  
+조금만 틀어져도 예측 단계는 실제 움직임과 달라지기 시작했다.
+
+문제는 여기서 끝이 아니었다.  
+예측이 틀리면 Kalman Filter는 새로운 관측값을 “신뢰할 수 없는 값”으로 판단한다.  
+그 결과 **노이즈를 줄이기는커녕, jitter가 더 증가하는** 역효과까지 발생했다.
+
+이 경험을 통해 깨달은 사실은 명확했다.
+
+**부정확한 모델 + 복잡한 필터 = 불안정한 추정**
+
+Kalman Filter 자체는 우아한 이론이지만,  
+실전에서는 **모델 정확도가 필터 자체보다 훨씬 더 중요**함을 절실히 느낄 수 있었다.
+
+정확한 동역학 모델 없이 Kalman Filter를 적용하는 것은  
+“기초가 흔들리는 건물 위에 복잡한 구조물을 올리는 것”과 같았다.
+
+---
+
+## 14.4 복잡함 대신 실전적 안정성 – SLAM 좌표 소수점 드랍(Drop)
+
+이 시점에서 우리는 접근 방식을 완전히 전환했다.  
+부정확한 예측 모델 위에 복잡한 Kalman Filter를 억지로 얹는 대신,  
+**SLAM의 결과를 직접적으로 안정화하는 단순하고 확실한 방식**을 택했다. 위치 좌표의 소수점 자리수를 drop하는 방식을 선택하였다.
+
+이 방식은 이론적으로 우아한 필터라고 할 수는 없지만,  
+실제 주행에서는 제어기 과민 반응을 억제하는 데 훨씬 확실한 효과를 보였다.
 
 ---
 
