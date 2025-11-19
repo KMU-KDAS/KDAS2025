@@ -8,7 +8,7 @@ The **Kookmin Autonomous Driving System (KMU-KDAS)** is a full-stack autonomous 
 
 ---
 
-## 0. Overall Results 
+## 1. Overall Results 
 
 Below are the final results showing each module operating in real time. Click on each caption to open the corresponding folder under `Product/`.
 
@@ -47,11 +47,11 @@ Below are the final results showing each module operating in real time. Click on
 
 ---
 
-## 1. Development Story and Repository Overview
+## 2. Development Story and Repository Overview
 
 This section summarizes the final system modules, representative figures, and links them to the directory structure under `Product/`. It complements the detailed narrative in the later sections.
 
-### 1.1 Overall Results 
+### 2.1 Overall Results 
 
 **Repository:** `Product/`
 
@@ -67,7 +67,7 @@ The final system integrates perception, planning, control, and ROS2 infrastructu
 
 ---
 
-### 1.2 Step 1 – Modeling and Simulation
+### 2.2 Step 1 – Modeling and Simulation
 
 <img src="images/control18.gif" width="450" alt="Modeling & Simulation (AEB/QCar Dynamics)"/>
 
@@ -91,7 +91,7 @@ Manual PID tuning proved unstable under varying loads. This led to the developme
 
 ---
 
-### 1.3 Step 2 – Real-Vehicle Implementation
+### 2.3 Step 2 – Real-Vehicle Implementation
 
 <img src="images/control19.gif" width="450" alt="Real Vehicle Control (Pure Pursuit on QCar2)"/>
 
@@ -108,7 +108,7 @@ Initial tests with Stanley revealed oscillations and understeering issues at hig
 
 ---
 
-### 1.4 Step 3 – Perception (Sensor Integration)
+### 2.4 Step 3 – Perception (Sensor Integration)
 
 <img src="images/SCNN10.gif" width="450" alt="Perception"/>
 
@@ -128,7 +128,7 @@ The sensor setup is described in `Product/Sensors/`, where we detail ROS2 topics
 
 ---
 
-### 1.5 Step 4 – Localization
+### 2.5 Step 4 – Localization
 
 <img src="images/local2.jpg" width="450" alt="Localization – Cartographer Map and Trajectory"/>
 
@@ -152,7 +152,7 @@ AMCL suffered from drift and map dependency, while Cartographer offered:
 
 ---
 
-### 1.6 Step 5 – Deep Learning-Based Perception (SCNN / YOLO / LSTM)
+### 2.6 Step 5 – Deep Learning-Based Perception (SCNN / YOLO / LSTM)
 
 <table>
   <tr>
@@ -193,7 +193,7 @@ This pipeline enabled proactive control decisions and operated at real-time fram
 
 ---
 
-### 1.7 Step 6 – Path Planning and Decision Making
+### 2.7 Step 6 – Path Planning and Decision Making
 
 <table>
   <tr>
@@ -221,7 +221,7 @@ Our decision layer combined:
 
 ---
 
-### 1.8 Step 7 – ROS2 Integration
+### 2.8 Step 7 – ROS2 Integration
 
 <img src="images/Ros1.gif" width="450" alt="ROS2 Integration – Full Stack on QCar2"/>
 
@@ -236,7 +236,7 @@ The launch configuration in `Product/ROS/` orchestrates the full system, enablin
 
 ---
 
-## 2. Project Overview and Motivation
+## 3. Project Overview and Motivation
 
 
 > “Can we implement the things we learned in class as industry-level technology?”
@@ -263,239 +263,6 @@ Whenever issues emerged during implementation, we analyzed the cause and iterate
 
 The core of this project was the belief that we could build real technology with what we had learned—and the determination to prove that belief through a complete autonomous driving system.
 
-
----
-## [3. Hardware System – “How do we bring an autonomous driving stack into the real world?”](Product/Circuit/)
-
-<img src="images/cir.png" width="450" alt="Circuit"/>
-
-In simulation, perception and control algorithms alone are enough to define “autonomous driving.”  
-But the moment we tried to run our stack on a real vehicle, a completely different question appeared:
-
-> “What kind of **vehicle hardware** do we need to trust this autonomous driving software in the real world?”
-
-It was no longer about “one board that moves the car.”
-
-We needed:
-
-- a boost converter,
-- Jetson power and I/O circuitry,
-- a VESC-based drive stage,
-- sensor interfaces,
-- and PCB layouts that tie everything together,
-
-so that the physical system can **reliably sustain what the algorithms expect it to do**.
-
----
-
-### 3.1 Power Stage – “Is it enough to just boost 7.4 V to 19 V?”
-
-The initial question was deceptively simple:
-
-> “We just need to boost 2S Li-ion (7.4 V) to 19 V. Can’t we just copy a reference boost design from the market?”
-
-Once we actually analyzed the boost behavior, that question changed immediately.
-
-- In **voltage-mode control**, the **RHP zero** fundamentally limits how wide we can set the bandwidth.
-- Increasing L and C reduces ripple but also worsens size, cost, and transient response.
-- In other words, simply “using bigger parts” is not enough to meet the **power quality and response** required by an autonomous system.
-
-So we had to ask a different question:
-
-> “Instead of oversizing components, what if we change the **control structure and topology**?”
-
-The first answer was to move to **current-mode control (PCMC, Peak Current Mode Control)**:
-
-- We include the inductor current in the feedback loop, making the effective plant closer to a first-order system.
-- We add slope compensation to suppress subharmonic oscillation.
-
-This allowed us to reframe the boost converter: not as a “fundamentally hard-to-control topology,” but as a **well-behaved target under current-mode control**.
-
-Then the next question followed:
-
-> “Even with current-mode control, do we really have to dump all ripple and device stress into a single phase?”
-
-Our solution was a **2-phase, 180° interleaved boost**:
-
-- The inductor ripple currents of the two phases partially cancel, reducing **input and output ripple current**.
-- Inductors and capacitors share current, **distributing thermal and electrical stress**.
-- The effective switching frequency doubles, allowing us to hit the same ripple targets with **smaller L and C**.
-
-After this design process, our view of the power stage changed completely:
-
-> “This booster is not just a ‘7.4 V → 19 V converter.’  
-> It is a **power architecture** that addresses RHP zeros, ripple, and device stress using  
-> current-mode control (PCMC) and a 2-phase interleaved topology.”
-
----
-
-### 3.2 Jetson and Sensors – “How far should we trust the reference design?”
-
-When we first planned to mount a Jetson, our instinct was:
-
-> “Wouldn’t it be safest to copy the NVIDIA reference board 1:1?”
-
-The reference design already includes power sequencing, USB, and CSI port configurations.  
-At first glance, copying it exactly seemed like the **lowest-risk option**.
-
-But once we laid out the BOM, the issues became clear:
-
-- Some power ICs and hub chips were **very expensive**.
-- Several components had **EOL or unstable supply**, making long-term procurement unreliable.
-- For a research/education platform that might go through multiple revisions and re-spins, this was not sustainable.
-
-So we had to reformulate the question:
-
-> “If we want to match the reference design’s performance,  
-> how do we do it with **components that we can continuously source**?”
-
-Our conclusion was:
-
-1. Keep the **electrical specifications** (voltage, current, ripple, transient behavior) aligned with the reference.  
-2. Rebuild the circuit using **components that are realistically available and stable in the local supply chain**.
-
-In practice:
-
-- Power ICs were replaced with **equivalent-grade devices** that matched the required specs.
-- The USB hub was switched to a chip with solid documentation and **stable distribution**, and we redesigned the Jetson–hub–sensor chain around it.
-
-In short:
-
-> “The Jetson power/I-O board preserves the reference design’s electrical requirements,  
-> but is rebuilt with components that we can **actually buy, repair, and recreate** over time.”
-
----
-
-### 3.3 Motor Drive – “How do we create an output we can trust?”
-
-On the motor side, the starting question was:
-
-> “How can we make motor control for an autonomous vehicle **stable and trustworthy**?”
-
-In this system, the motor is not just a part that spins the wheels.  
-It is the **final actuator** that turns perception and control outputs into real-world motion.  
-If motor control is unstable, safety logic is weak, or Jetson–VESC communication breaks, the entire stack collapses.
-
-We therefore made an early design choice:
-
-> “Rather than building our own motor control core,  
-> let’s **build our hardware around a proven core**.”
-
-The answer was:
-
-- the open-source **VESC reference**, and  
-- the **F1TENTH VESC ROS nodes** (such as `vesc_driver`).
-
-That is:
-
-- Low-level FOC control, current/voltage/temperature sensing, and protection logic are delegated to **VESC**, which is already well tested.
-- High-level commands between Jetson and VESC flow through **ROS nodes**, using topics and services.
-
-The next question was about **physical connectivity**:
-
-> “The software stack is robust, but how do we connect things physically  
-> so that we have a **control path that does not randomly break**?”
-
-Our first thought was to simply wire Jetson and VESC using external cables and exposed connectors.  
-However, in a real vehicle:
-
-- vibration and shock,
-- repeated plugging/unplugging,
-- and constrained cable routing
-
-mean that even a slightly loose connector can **break communication**—which directly turns into unpredictable motor behavior and safety risk.
-
-So we changed our answer:
-
-> “Pull the VESC–Jetson link **as far inside the PCB as possible**.”
-
-In the final design:
-
-- Critical interfaces between Jetson and VESC are connected via **internal PCB traces**, not long external cables.
-- Exposed, frequently-handled cable segments are **minimized**.
-
-The result is a VESC–Jetson pair that:
-
-- is integrated logically through the **VESC–ROS stack**, and  
-- is connected physically through a **robust internal PCB path**,
-
-forming a **single, hard-to-break control pathway**.
-
-Summarizing:
-
-> “Our VESC-based drive stage places a proven motor-control core underneath  
-> a custom power, sensing, communication, and wiring design that is tailored to our vehicle,  
-> raising the stability and trustworthiness of motor control.”
-
----
-
-### 3.4 PCB Layout – “How much attention does a single trace deserve?”
-
-Near the end of the schematic design, another question arose:
-
-> “How can we ensure that this circuit, once laid out on a PCB,  
-> will behave **stably in the real world**?”
-
-At higher switching frequencies, **traces and vias are no longer just ‘wires’.**  
-They carry resistance as well as **parasitic inductance (L)** and **parasitic capacitance (C)**.
-
-So layout design inevitably led to the question:
-
-> “How do we close loops and route traces so that we can **trust this board** later?”
-
-We based our layout on two core principles:
-
-1. **“Minimize loop area, but don’t create excessive parasitic capacitance.”**  
-2. **“Always route signals together with their return paths.”**
-
-More concretely:
-
-- The boost switching loop, gate driver–MOSFET loop, and current sensing loop were  
-  routed to close within **tight, compact areas** to reduce parasitic L.
-- At the same time, we avoided over-compressing them to the point that parasitic C to adjacent traces/planes would explode;  
-  we tuned spacing and loop size to find a **balanced middle ground**.
-- Trace corners were routed at **45° instead of 90°**, reducing local impedance jumps, heating, and waveform distortion in high-frequency paths.
-
-Additionally:
-
-- High-speed and sensitive signals were placed with their **GND return paths directly under/next to them**,  
-  minimizing the signal–return loop area and reducing both radiated EMI and susceptibility to external noise.
-- USB and CSI lines were routed so that they would **not run long, parallel segments with power lines**, mitigating unwanted coupling.
-- TVS/ESD arrays were placed **as close as possible** to each external connector,  
-  clamping ESD and surge events at the port itself.
-- Power GND and signal GND were not mixed arbitrarily across the board;  
-  they were **joined at carefully chosen single-point connections**.
-
-In summary:
-
-> “This is not just a board with a clean schematic.  
-> It is a PCB whose traces and loops are laid out with **parasitic L/C and long-term reliability in mind**.”
-
----
-
-### 3.5 Summary – Not just “combined references”, but “hardware shaped by questions”
-
-At a glance, the hardware in this project might look like:
-
-- a 2-phase interleaved boost converter,
-- a Jetson power/I-O board,
-- and a VESC-based drive unit.
-
-Just three PCBs.
-
-But beneath that, there is a long chain of questions and answers:
-
-- “Can we really power this system stably with a boost converter?”
-- “How far should we copy the Jetson reference, and where must we diverge?”
-- “How do we make motor control that is both safe and robust against disconnection?”
-- “How should we draw even a single trace so that we can trust it years later?”
-
-Because of that, we think this work is best described as:
-
-> “A hardware stack that evolved in response to our own questions —  
-> built on proven references like VESC and Jetson,  
-> but re-engineered in circuitry and layout to become a  
-> **‘question-driven autonomous driving hardware stack.’**”
 
 
 ---
@@ -1943,7 +1710,241 @@ By reinterpreting and connecting these concepts, we strengthened our capability 
 
 ---
 
-## 17. Conclusion and Achievements
+## [17. Hardware System – “How do we bring an autonomous driving stack into the real world?”](Product/Circuit/)
+
+<img src="images/cir.png" width="450" alt="Circuit"/>
+
+In simulation, perception and control algorithms alone are enough to define “autonomous driving.”  
+But the moment we tried to run our stack on a real vehicle, a completely different question appeared:
+
+> “What kind of **vehicle hardware** do we need to trust this autonomous driving software in the real world?”
+
+It was no longer about “one board that moves the car.”
+
+We needed:
+
+- a boost converter,
+- Jetson power and I/O circuitry,
+- a VESC-based drive stage,
+- sensor interfaces,
+- and PCB layouts that tie everything together,
+
+so that the physical system can **reliably sustain what the algorithms expect it to do**.
+
+---
+
+### 17.1 Power Stage – “Is it enough to just boost 7.4 V to 19 V?”
+
+The initial question was deceptively simple:
+
+> “We just need to boost 2S Li-ion (7.4 V) to 19 V. Can’t we just copy a reference boost design from the market?”
+
+Once we actually analyzed the boost behavior, that question changed immediately.
+
+- In **voltage-mode control**, the **RHP zero** fundamentally limits how wide we can set the bandwidth.
+- Increasing L and C reduces ripple but also worsens size, cost, and transient response.
+- In other words, simply “using bigger parts” is not enough to meet the **power quality and response** required by an autonomous system.
+
+So we had to ask a different question:
+
+> “Instead of oversizing components, what if we change the **control structure and topology**?”
+
+The first answer was to move to **current-mode control (PCMC, Peak Current Mode Control)**:
+
+- We include the inductor current in the feedback loop, making the effective plant closer to a first-order system.
+- We add slope compensation to suppress subharmonic oscillation.
+
+This allowed us to reframe the boost converter: not as a “fundamentally hard-to-control topology,” but as a **well-behaved target under current-mode control**.
+
+Then the next question followed:
+
+> “Even with current-mode control, do we really have to dump all ripple and device stress into a single phase?”
+
+Our solution was a **2-phase, 180° interleaved boost**:
+
+- The inductor ripple currents of the two phases partially cancel, reducing **input and output ripple current**.
+- Inductors and capacitors share current, **distributing thermal and electrical stress**.
+- The effective switching frequency doubles, allowing us to hit the same ripple targets with **smaller L and C**.
+
+After this design process, our view of the power stage changed completely:
+
+> “This booster is not just a ‘7.4 V → 19 V converter.’  
+> It is a **power architecture** that addresses RHP zeros, ripple, and device stress using  
+> current-mode control (PCMC) and a 2-phase interleaved topology.”
+
+---
+
+### 17.2 Jetson and Sensors – “How far should we trust the reference design?”
+
+When we first planned to mount a Jetson, our instinct was:
+
+> “Wouldn’t it be safest to copy the NVIDIA reference board 1:1?”
+
+The reference design already includes power sequencing, USB, and CSI port configurations.  
+At first glance, copying it exactly seemed like the **lowest-risk option**.
+
+But once we laid out the BOM, the issues became clear:
+
+- Some power ICs and hub chips were **very expensive**.
+- Several components had **EOL or unstable supply**, making long-term procurement unreliable.
+- For a research/education platform that might go through multiple revisions and re-spins, this was not sustainable.
+
+So we had to reformulate the question:
+
+> “If we want to match the reference design’s performance,  
+> how do we do it with **components that we can continuously source**?”
+
+Our conclusion was:
+
+1. Keep the **electrical specifications** (voltage, current, ripple, transient behavior) aligned with the reference.  
+2. Rebuild the circuit using **components that are realistically available and stable in the local supply chain**.
+
+In practice:
+
+- Power ICs were replaced with **equivalent-grade devices** that matched the required specs.
+- The USB hub was switched to a chip with solid documentation and **stable distribution**, and we redesigned the Jetson–hub–sensor chain around it.
+
+In short:
+
+> “The Jetson power/I-O board preserves the reference design’s electrical requirements,  
+> but is rebuilt with components that we can **actually buy, repair, and recreate** over time.”
+
+---
+
+### 17.3 Motor Drive – “How do we create an output we can trust?”
+
+On the motor side, the starting question was:
+
+> “How can we make motor control for an autonomous vehicle **stable and trustworthy**?”
+
+In this system, the motor is not just a part that spins the wheels.  
+It is the **final actuator** that turns perception and control outputs into real-world motion.  
+If motor control is unstable, safety logic is weak, or Jetson–VESC communication breaks, the entire stack collapses.
+
+We therefore made an early design choice:
+
+> “Rather than building our own motor control core,  
+> let’s **build our hardware around a proven core**.”
+
+The answer was:
+
+- the open-source **VESC reference**, and  
+- the **F1TENTH VESC ROS nodes** (such as `vesc_driver`).
+
+That is:
+
+- Low-level FOC control, current/voltage/temperature sensing, and protection logic are delegated to **VESC**, which is already well tested.
+- High-level commands between Jetson and VESC flow through **ROS nodes**, using topics and services.
+
+The next question was about **physical connectivity**:
+
+> “The software stack is robust, but how do we connect things physically  
+> so that we have a **control path that does not randomly break**?”
+
+Our first thought was to simply wire Jetson and VESC using external cables and exposed connectors.  
+However, in a real vehicle:
+
+- vibration and shock,
+- repeated plugging/unplugging,
+- and constrained cable routing
+
+mean that even a slightly loose connector can **break communication**—which directly turns into unpredictable motor behavior and safety risk.
+
+So we changed our answer:
+
+> “Pull the VESC–Jetson link **as far inside the PCB as possible**.”
+
+In the final design:
+
+- Critical interfaces between Jetson and VESC are connected via **internal PCB traces**, not long external cables.
+- Exposed, frequently-handled cable segments are **minimized**.
+
+The result is a VESC–Jetson pair that:
+
+- is integrated logically through the **VESC–ROS stack**, and  
+- is connected physically through a **robust internal PCB path**,
+
+forming a **single, hard-to-break control pathway**.
+
+Summarizing:
+
+> “Our VESC-based drive stage places a proven motor-control core underneath  
+> a custom power, sensing, communication, and wiring design that is tailored to our vehicle,  
+> raising the stability and trustworthiness of motor control.”
+
+---
+
+### 17.4 PCB Layout – “How much attention does a single trace deserve?”
+
+Near the end of the schematic design, another question arose:
+
+> “How can we ensure that this circuit, once laid out on a PCB,  
+> will behave **stably in the real world**?”
+
+At higher switching frequencies, **traces and vias are no longer just ‘wires’.**  
+They carry resistance as well as **parasitic inductance (L)** and **parasitic capacitance (C)**.
+
+So layout design inevitably led to the question:
+
+> “How do we close loops and route traces so that we can **trust this board** later?”
+
+We based our layout on two core principles:
+
+1. **“Minimize loop area, but don’t create excessive parasitic capacitance.”**  
+2. **“Always route signals together with their return paths.”**
+
+More concretely:
+
+- The boost switching loop, gate driver–MOSFET loop, and current sensing loop were  
+  routed to close within **tight, compact areas** to reduce parasitic L.
+- At the same time, we avoided over-compressing them to the point that parasitic C to adjacent traces/planes would explode;  
+  we tuned spacing and loop size to find a **balanced middle ground**.
+- Trace corners were routed at **45° instead of 90°**, reducing local impedance jumps, heating, and waveform distortion in high-frequency paths.
+
+Additionally:
+
+- High-speed and sensitive signals were placed with their **GND return paths directly under/next to them**,  
+  minimizing the signal–return loop area and reducing both radiated EMI and susceptibility to external noise.
+- USB and CSI lines were routed so that they would **not run long, parallel segments with power lines**, mitigating unwanted coupling.
+- TVS/ESD arrays were placed **as close as possible** to each external connector,  
+  clamping ESD and surge events at the port itself.
+- Power GND and signal GND were not mixed arbitrarily across the board;  
+  they were **joined at carefully chosen single-point connections**.
+
+In summary:
+
+> “This is not just a board with a clean schematic.  
+> It is a PCB whose traces and loops are laid out with **parasitic L/C and long-term reliability in mind**.”
+
+---
+
+### 17.5 Summary – Not just “combined references”, but “hardware shaped by questions”
+
+At a glance, the hardware in this project might look like:
+
+- a 2-phase interleaved boost converter,
+- a Jetson power/I-O board,
+- and a VESC-based drive unit.
+
+Just three PCBs.
+
+But beneath that, there is a long chain of questions and answers:
+
+- “Can we really power this system stably with a boost converter?”
+- “How far should we copy the Jetson reference, and where must we diverge?”
+- “How do we make motor control that is both safe and robust against disconnection?”
+- “How should we draw even a single trace so that we can trust it years later?”
+
+Because of that, we think this work is best described as:
+
+> “A hardware stack that evolved in response to our own questions —  
+> built on proven references like VESC and Jetson,  
+> but re-engineered in circuitry and layout to become a  
+> **‘question-driven autonomous driving hardware stack.’**”
+
+---
+
+## 18. Conclusion and Achievements
 
 <table>
   <tr>
@@ -2037,7 +2038,7 @@ Every step forward started from the question:
 
 ---
 
-## 18. Summary
+## 19. Summary
 
 The KDAS2025 project evolved from simple simulation-based control experiments into a **fully integrated AI-driven autonomous vehicle system**.
 
