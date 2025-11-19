@@ -1732,6 +1732,8 @@ This yields an avoidance path that:
 
 We combined these concepts into a three-step hybrid framework:
 
+<img src="images/avo5.png" width="450" alt="Diagram"/>
+
 1. **Decision (TDM)** – When and where to avoid  
    - Use \(v_{\text{rel}}\), TTC, and spatio-temporal gaps to decide whether to avoid.  
    - Determine which direction (left/right) offers a safer gap.
