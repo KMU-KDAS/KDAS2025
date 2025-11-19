@@ -1646,10 +1646,10 @@ To formalize this vague judgment, we analyzed the paper:
 
 This work introduced a **TDM (Tactical Decision Making)** structure that considers:
 
-- ego speed,  
-- relative speed \(v_{\text{rel}}\),  
-- TTC (Time-To-Collision), and  
-- front/rear gaps and adjacent-lane gaps (spatio-temporal gaps).
+- ego speed
+- relative speed (v_rel)
+- TTC (Time-To-Collision) 
+- front/rear gaps and adjacent-lane gaps (spatio-temporal gaps)
 
 The core idea is to encode **action choices** (e.g., keep lane, brake, change lane) as **cost structures** over these variables.
 
