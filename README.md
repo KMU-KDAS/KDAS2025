@@ -1612,31 +1612,7 @@ and it represents **one of the most technically complete and mature components**
 
 ## [16. Avoidance Maneuver – TDM + TG–PH Hybrid Framework](Product/Control/Avoidance%20Control/)
 
-<table>
-  <tr>
-    <td align="center" valign="top">
-      <img src="images/avo6.gif" alt="PH trajectory" width="400"/><br/>
-      <b>Large Obstacle</b>
-    </td>
-    <td align="center" valign="top">
-      <img src="images/avo7.gif" alt="PH trajectory" width="400"/><br/>
-      <b>Small Obstacle</b>
-    </td>
-  </tr>
-</table>
-
-<table>
-  <tr>
-    <td align="center" valign="top">
-      <img src="images/avo8.gif" alt="PH trajectory" width="400"/><br/>
-      <b>Right direction</b>
-    </td>
-    <td align="center" valign="top">
-      <img src="images/avo9.gif" alt="PH trajectory" width="400"/><br/>
-      <b>Left direction</b>
-    </td>
-  </tr>
-</table>
+<img src="images/avo10.gif" width="450" alt="Driving situation"/>
 
 Even after implementing AEB, one question kept recurring.
 
@@ -1788,6 +1764,34 @@ Thus, what we created is not “Paper A + Paper B,” but a unified **system-lev
 - PH provides a framework for **geometrically sound avoidance trajectories**.
 
 This required the ability to decompose problems, find relevant concepts, and recombine them in a way that fit our system’s architecture—an essential step toward research-level thinking.
+
+
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <img src="images/avo6.gif" alt="PH trajectory" width="400"/><br/>
+      <b>Large Obstacle</b>
+    </td>
+    <td align="center" valign="top">
+      <img src="images/avo7.gif" alt="PH trajectory" width="400"/><br/>
+      <b>Small Obstacle</b>
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <img src="images/avo8.gif" alt="PH trajectory" width="400"/><br/>
+      <b>Right direction</b>
+    </td>
+    <td align="center" valign="top">
+      <img src="images/avo9.gif" alt="PH trajectory" width="400"/><br/>
+      <b>Left direction</b>
+    </td>
+  </tr>
+</table>
+
 
 In summary:
 
