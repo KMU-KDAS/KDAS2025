@@ -527,7 +527,20 @@ After recognizing that the two environments operate on different computation par
 Only after this integration was complete could we apply our designed PID controller to the virtual motor model.
 
 However, the tuning process revealed new issues. Because PID responses change significantly with even small gain adjustments, we had to repeat the cycle of “adjust gain → observe response” many times. Even then, it was difficult to be confident that the chosen gains were truly optimal.
-<img src="images/PID3.png" width="450" alt="PID-Autotunning result"/>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/PID3.png" alt="Motor Voltage Response" width="400"/><br/>
+      <b>Voltage Graph</b>
+    </td>
+    <td align="center">
+      <img src="images/PID4.png" alt="Motor Speed Response" width="400"/><br/>
+      <b>Motor Speed</b>
+    </td>
+  </tr>
+</table>
+
 To overcome this inefficiency and uncertainty, we searched for a more systematic method to derive gains and adopted **PID Autotuner**. PID Autotuner computes gains based on the actual system response, providing more stable and consistent control performance compared to manual tuning.
 
 ---
