@@ -879,6 +879,8 @@ We initially experimented with a custom CNN-based lane detector. However, after 
 
 We compared major lane detection models such as **PolyLaneNet**, **UFLD (Ultra Fast Lane Detection)**, and **SCNN (Spatial CNN)** by studying their research papers and experimental results. In terms of addressing our issues—lane discontinuity and curvature—**SCNN** emerged as the most suitable choice.
 
+<img src="images/SCNN2.png" width="450" alt="SCNN mdel architecture"/>
+
 Our core problem could be summarized as a lack of **continuity**. SCNN addresses exactly this through a spatial message passing structure: it propagates features in the **up, down, left, and right** directions within the CNN, sharing spatial context and enforcing continuity along lanes.
 
 However, simply importing a pretrained SCNN model did not solve our problem:
@@ -1528,6 +1530,8 @@ to form a single **Global Path** over the full track.
 ---
 
 ### 15.4 Converting to a Directed Graph – Reinterpreting Data Structures & Algorithms
+
+<img src="images/dqn1.png" width="450" alt="dqn directed graph"/>
 
 The Global Path obtained from RRT is a set of **continuous coordinates**.  
 But to solve the taxi problem, simply following that path is not enough.
