@@ -1728,7 +1728,7 @@ Adopting TDM allowed our vehicle to answer:
 - “Given current speed, is the available gap sufficient to merge?”
 
 <p align="center">
-  <img src="images/avo1.png" alt="Decision Topology" width="300"/>
+  <img src="images/avo1.png" alt="Decision Topology" width="450"/>
 </p>
 
 In other words, TDM provides a systematic framework for answering:
@@ -1746,7 +1746,9 @@ After implementing TDM, the vehicle could logically conclude:
 
 But still lacked answers to:
 
-<img src="images/avo2.png" width="300" alt="Avoding Situation"/>
+<p align="center">
+<img src="images/avo2.png" width="450" alt="Avoding Situation"/>
+</p>
 
 - “How far sideways must I move to avoid a collision?”  
 - “How do I quantify the efficiency of the avoidance path?”  
