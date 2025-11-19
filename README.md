@@ -579,7 +579,7 @@ Most importantly, we implemented the entire pipeline—from modeling to visualiz
 
 ## 6. Dynamics Modeling – [AEB_Dynamics](Product/Dynamics/AEB%20Dynamics/) & [QCar_Dynamics](Product/Dynamics/Qcar%20Dynamics/)
 
-<img src="images/dyn1.png" width="450" alt="Vehicle Dynamics – Longitudinal/Lateral Modeling"/>
+<img src="images/dyn1.png" width="900" alt="Vehicle Dynamics – Longitudinal/Lateral Modeling"/>
 
 As we experimented with more and more control structures, one question kept coming back:  
 sensor outputs alone were not enough to fully control the vehicle’s motion.
