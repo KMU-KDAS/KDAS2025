@@ -1032,100 +1032,107 @@ Waypoints를 통해
 
 
 ---
-## 12. 궤적 추종 제어의 시작 – Stanley Controller
-Xytron 대회에서 차량을 처음으로 움직여 보았을 때, 우리는 PID 제어기의 한계를 즉시 체감했다.  
-직선에서는 어느 정도 정상 주행이 가능했지만,
+## 12. Beginning Trajectory Tracking Control – Stanley Controller
 
-- 코너 진입 시 진동  
-- 오버슈트·언더슈트  
-- 불안정한 궤적 유지
+When we first moved the vehicle in the Xytron competition simulator,  
+we immediately felt the limitations of the PID controller.  
+On straight segments it could more or less keep the lane, but:
 
-이 문제가 반복되었다.
+- vibrations when entering a corner  
+- overshoot and undershoot  
+- unstable trajectory tracking  
 
-그때 우리는 명확히 알 수 있었다.  
-**“단순한 피드백 제어만으로는 자율주행을 만들 수 없다.”**
+kept appearing.
 
-그래서 PID의 구조적 한계를 넘어설 제어기가 필요했고, 가장 먼저 떠올린 것이 바로 **Stanley 제어기**였다.
+At that moment it became clear:
 
----
+**“Pure feedback control alone is not enough to build autonomous driving.”**
 
-### 12.1 Stanley를 위한 첫 설계: SCNN + Depth 기반 3D Waypoint
-<img src="images/control5.png" width="450"/>
-
-Stanley를 선택한 이유는 명확했다.
-
-- 2005 DARPA Grand Challenge 우승 차량의 실제 제어기  
-- 센서 기반 waypoint 추종에 최적화  
-- 고속 상황에서 검증된 안정성  
-- 우리가 구축하려는 실시간 자율주행 구조와 높은 적합성  
-
-Stanley 제어기는 다음 값들을 이용해 조향을 계산한다.
-
-- 횡오차 (cross-track error)  
-- 헤딩 오차 (heading error)  
-- 차선 곡률 (curvature)
-
-이 변수들은 단순한 오차 피드백 구조인 PID와 달리  
-분명한 기하학적 해석을 가진다는 점에서 큰 장점이 있었다.  
-하지만 여기서 구조적인 문제가 드러났다.
+We needed a controller that could overcome PID’s structural limitations,  
+and the first candidate that came to mind was the **Stanley controller**.
 
 ---
 
-### 12.2 2D 정보의 구조적 한계
+### 12.1 First Design for Stanley: SCNN + Depth-Based 3D Waypoints
+<img src="images/control5.png" width="450" alt="Stanley with SCNN and Depth pipeline"/>
 
-카메라 이미지와 SCNN 마스크는 어디까지나 **2D 평면 정보**다.  
-즉, 화면에서 보이는 곡률은 단지 **픽셀 공간에서의 곡선**일 뿐이며,
+Our reasons for choosing Stanley were clear:
 
-- 실제 거리 단위(m)에서 정의되는 **물리적 곡률(1/m)**과는 무관하다  
-- 따라서 2D 정보만으로는 Stanley가 요구하는  
-  **횡오차(cross-track error)** · **헤딩오차(heading error)** · **곡률(curvature)**  
-  을 실제 좌표계에서 계산하는 것이 불가능하다
+- actually used on the winning vehicle of the **2005 DARPA Grand Challenge**  
+- optimized for **sensor-based waypoint tracking**  
+- proven stability at **high speeds**  
+- highly compatible with the real-time autonomous driving architecture we wanted to build  
 
-이 한계를 해결하기 위해 우리는 **Depth 카메라**를 도입했다.
+The Stanley controller computes steering from:
 
-Depth는 각 픽셀이 카메라로부터 **얼마나 떨어져 있는지(m)**를 의미한다.  
-이를 SCNN 마스크와 결합하면, 각 픽셀은 차량 기준의 **3D 실세계 좌표**로 변환된다.
+- **cross-track error**  
+- **heading error**  
+- **lane curvature**
 
-즉, SCNN 결과는 더 이상 단순한 2D 윤곽선이 아니라  
-**“도로 위 실제 차선의 3차원 기하 구조”**로 재해석된다.
-
-이에 따른 3D Waypoint 기반 파이프라인을 다음과 같이 설계했다.
-
-1. **SCNN으로 차선 마스크 검출**
-2. **Depth 카메라로 각 픽셀의 실제 거리 추정**
-3. **두 정보를 결합해 3D waypoint 생성**
-4. **생성된 waypoint를 Stanley 제어기의 입력으로 제공**
-
-이 파이프라인이 정상적으로 동작했다면,  
-Stanley는 이론적으로도 실전에서도 가장 강력한 조향 제어기가 될 수 있었다.
+Unlike simple PID error-feedback,  
+these variables have a clear geometrical interpretation, which is a major advantage.  
+However, at this point a structural problem appeared.
 
 ---
 
-### 12.3 예상 밖의 장애물 – Depth 카메라 버그로 인한 전면 중단
+### 12.2 Structural Limitations of 2D Information
 
-<img src="images/depthissue.png" width="800" alt="Quanser's depth problem"/>
+Camera images and SCNN masks are fundamentally **2D planar information**.  
+In other words, the curvature you see on the screen is just a **curve in pixel space**, and:
 
-그러나 실험에서 **치명적 문제가 발생**했다.  
-QLabs Depth 카메라가 버그로 인해 올바른 depth 값을 제공하지 않았던 것이다.
+- it is unrelated to the **physical curvature (1/m)** defined in real-world metric space  
+- therefore, using only 2D information, it is impossible to compute  
+  **cross-track error**, **heading error**, and **curvature**  
+  in the actual vehicle coordinate frame in the way Stanley requires
 
-출력된 값은 다음과 같았다.
+To overcome this limitation, we introduced a **depth camera**.
 
-- `0`
-- `∞`
-- 프레임마다 들쭉날쭉한 비정상 값
+Depth tells us **how far each pixel is from the camera (in meters)**.  
+When combined with the SCNN mask, each lane pixel can be converted into a  
+**3D real-world coordinate** in the vehicle frame.
 
-즉, **실제 거리 정보가 완전히 증발된 상태**였다.
+Thus, the SCNN output is no longer just a 2D contour, but can be reinterpreted as
 
-Depth가 없으면:
+> **“the full 3D geometric structure of the lane on the road.”**
 
-- SCNN의 **픽셀 좌표 → 실제 월드 좌표 변환 불가능**
-- 월드 좌표가 없으면 → **Stanley용 3D waypoint 생성 불가능**
+Based on this, we designed the following 3D waypoint pipeline:
 
-결론적으로,  
-**Stanley 기반 제어 구조는 초기 단계에서 전면 중단**될 수밖에 없었다.
+1. **Detect lane mask with SCNN**  
+2. **Use the depth camera to estimate the metric distance of each pixel**  
+3. **Fuse the two to generate 3D waypoints**  
+4. **Feed the generated waypoints into the Stanley controller**
 
-따라서 우리는 다시 처음으로 돌아가,  
-**대체 가능한 조향 제어 방식이 무엇인지 근본적으로 재검토**해야 했다.
+If this pipeline had functioned as intended,  
+Stanley could have become the most powerful steering controller for both theory and practice.
+
+---
+
+### 12.3 An Unexpected Obstacle – Complete Shutdown Due to Depth Camera Bug
+
+<img src="images/depthissue.png" width="800" alt="Quanser depth camera issue"/>
+
+However, during experiments we encountered a **critical issue**.  
+The QLabs depth camera was bugged and did not provide valid depth values.
+
+The output looked like this:
+
+- constant `0`  
+- constant `∞`  
+- random, frame-to-frame inconsistent values  
+
+In other words, **all meaningful distance information was essentially lost**.
+
+Without depth:
+
+- SCNN **pixel coordinates cannot be converted to world coordinates**  
+- without world coordinates → **no 3D waypoint generation for Stanley**
+
+As a result,  
+the **Stanley-based control architecture had to be completely abandoned** in the early stage.
+
+This forced us to go back to the beginning and  
+**fundamentally re-evaluate which alternative steering control methods were realistically usable** under our constraints.
+
 
 ---
 
