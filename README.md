@@ -957,76 +957,98 @@ These lessons directly shaped our next steps in the Quanser phase. With access t
 
 ---
 
-## 11. After Perception – “We See the Lane. Now How Do We Drive?”
+11. 인지 이후의 질문 – “차선을 봤는데, 이제 어떻게 주행하지?”
 
+차선을 인지하게 되었을 때, 우리는 오히려 더 본질적인 질문과 마주하게 되었다.
 
-Once we could reliably detect lanes, a more fundamental question emerged:
+“차선을 본 건 좋다. 그런데 이걸 가지고 실제로 어떻게 이동하지?”
 
-> “It’s good that we can see the lane, but how do we actually move using that information?”
+SCNN은 차선의 구조를 시각적으로 잘 표현해준다.
+하지만 차량을 실제로 움직이는 제어기는 이미지가 아니라,
 
-SCNN provides lane information as **images**, but controllers require **numeric coordinates**. Perception alone is “seeing.” To move the vehicle, we must convert this information into mathematically defined targets—concrete points that the vehicle can follow.
+어디로 향해야 하는가
 
-We reasoned as follows:
+어떤 경로(trajectory)를 따라가야 하는가
 
-- An autonomous vehicle moves by following a sequence of **continuous target points**.  
-- We need a way to express these target points.  
-- What if we represent the driving path as a sequence of **waypoints**?
+와 같은 기하학적 목표를 필요로 한다.
 
-This led us to the widely used concept of **waypoints** in autonomous driving: generating points along the lane center and connecting them into a drivable path.
+즉,
+‘보는 것(Perception)’과 ‘움직이는 것(Control)’ 사이에는
+이를 연결해주는 또 하나의 단계가 필요했다.
 
-### 11.1 Depth-Based Waypoint Generation – and Its Structural Limits
+11.1 차선 → 주행 경로로 이어지는 사고의 흐름
 
-To generate waypoints, we must convert pixel coordinates into real-world coordinates (x, y). A natural idea was to use a **depth camera** and map SCNN’s pixel outputs to metric coordinates.
+자율주행 차량이 자연스럽게 움직이려면
+차량이 따라가야 할 연속된 목표점(sequence of target points) 이 필요하다.
 
-However, this is where we encountered a fundamental issue.
+이 사고 흐름은 아주 단순한 질문에서 출발했다.
 
-The QLabs simulator provider had already announced that **the depth camera was not functioning correctly**. We confirmed that the depth frames:
+“자율주행 차량은 결국 연속된 목표점을 따라 움직인다.”
 
-- contained very few valid values,
-- intermittently produced invalid values like 0 and ∞, and
-- exhibited highly inconsistent patterns from frame to frame.
+그렇다면 이 목표점(target point) 을 어떤 구조로 표현할 것인가?
 
-In other words, the depth sensor was **unusable** for real-time coordinate conversion.
+우리는 주행 경로를 일련의 점(point) 으로 표현할 수 있다는 생각에 도달했고,
+그 과정에서 자율주행 연구에서 널리 사용되는 개념인 Waypoint(경유점) 을 선택하게 되었다.
 
-This was more than a sensor choice issue; it meant that our entire approach did not structurally fit the QLabs environment.
+차선 중심을 기반으로 차량이 따라갈 점들을 생성하고
 
-### 11.2 A More Important Lesson – Waypoints Are an “Language,” Not Just Points
+이 점들을 연결하여 실제 주행 경로(path) 를 구성하는 방식이다
 
-Depth was not the only problem. We realized something deeper: even if depth had worked perfectly, the waypoints we were generating would have been unsuitable for control.
+11.2 더 중요한 깨달음 – Waypoint는 “점”이 아니라 “언어”다
 
-Sensor-based waypoints are inherently:
+Waypoint를 도입한다는 것은 단순히 좌표를 찍는 행위가 아니다.
 
-- noisy and unstable from frame to frame,  
-- sensitive to small sensor perturbations, and  
-- discontinuous, with frequent gaps between points.
+우리가 만들려고 했던 것은
+차선이라는 시각적 정보를
+차량이 따라갈 수 있는 좌표 기반의 구조적 표현으로 변환하는 과정이었다.
 
-From the controller’s perspective, this is not a **trackable path** but a **collection of jittering points**.
+Waypoint는 단순한 위치 정보가 아니라,
 
-From this experience, we learned that **waypoints are not just points but a structural “language” for expressing stable, drivable paths**. Unless this language is used correctly, even the best perception or control algorithms cannot produce stable vehicle motion.
+차선의 흐름을 수학적으로 표현하고
 
-### 11.3 Our Conclusion from This Failure
+차량의 주행 방향을 자연스럽게 이어주며
 
-Seeing the lane is only the beginning of perception and does not automatically produce drivable behavior.
+제어기가 사용할 수 있는 경로의 언어(Path Language) 역할을 한다
 
-To move an autonomous vehicle, we must:
+즉,
 
-- convert pixel-based perception to **real-world coordinates**,  
-- ensure these coordinates are **continuous**, and  
-- represent them as a **noise-resilient path structure** suitable for control.
+Waypoint는 차량이 안정적으로 따를 수 있는 경로를 표현하는 하나의 구조적 언어다.
 
-Since the QLabs depth sensor was structurally unusable and sensor-based waypoint generation could not guarantee stability, we concluded that this approach was fundamentally flawed.
+이 언어를 제대로 사용하지 않으면,
+아무리 인지가 정확하고 제어기가 좋아도
+차량은 안정적으로 움직일 수 없다는 것을 깨달았다.
 
-This failure became a turning point that led us to more robust, structurally grounded path planning methods:
+11.3 Waypoint 도입 이후의 확장
 
-- SLAM-based pose estimation,
-- RRT-based path planning, and
-- PH-based avoidance maneuver generation.
+차선을 본다는 건 인지의 시작일 뿐, 그것만으로는 주행을 만들 수 없다.
 
-The question,
+차량이 실제로 움직이려면:
 
-> “We see the lane, but how do we drive?”
+픽셀 기반 인지를 실제 거리 기반 좌표로 변환하고
 
-was not merely a technical issue. It taught us that perception outputs must be **translated into the “language of paths”**—a comprehensive reasoning process in its own right.
+그 좌표가 연속적(continuous) 이어야 하며
+
+센서 노이즈에도 흔들리지 않는 안정적 경로 구조로 표현돼야 한다
+
+Waypoint를 통해
+“차선 → 경로 → 제어 입력”
+이라는 흐름이 만들어지자 자연스럽게 다음 단계가 보이기 시작했다.
+
+전체 트랙에서 차량의 정확한 위치는 어떻게 알지?
+→ SLAM
+
+트랙 전체의 경로는 어떻게 만들지?
+→ RRT 기반 Global Path Planning
+
+다양한 상황에서 경로는 어떻게 선택하지?
+→ Decision Layer, DQN(RL)
+
+장애물을 어떻게 자연스럽게 회피하고 복귀하지?
+→ Potential Field 기반 회피 기동(PH)
+
+결국 waypoint는 단순한 기술 요소가 아니라,
+
+우리가 구축한 전체 Path Planning 구조의 출발점이 되었다.
 
 ---
 ## 12. 궤적 추종 제어의 시작 – Stanley Controller
