@@ -961,6 +961,8 @@ These lessons directly shaped our next steps in the Quanser phase. With access t
 
 ## 11. After Perception – “We can see the lane… but how do we actually drive?”
 
+<img src="images/waypoint.png" width="800" alt="waypoint"/>
+
 Once we were able to detect the lane, we ran into a more fundamental question:  
 **“Seeing the lane is good. But how do we actually move using this information?”**
 
