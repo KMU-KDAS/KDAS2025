@@ -958,84 +958,93 @@ These lessons directly shaped our next steps in the Quanser phase. With access t
 ---
 
 
+## 11. After Perception – “We can see the lane… but how do we actually drive?”
 
-## 11. 인지 이후의 질문 – “차선을 봤는데, 이제 어떻게 주행하지?”
+Once we were able to detect the lane, we ran into a more fundamental question:  
+**“Seeing the lane is good. But how do we actually move using this information?”**
 
-차선을 인지하게 되었을 때, 우리는 오히려 더 본질적인 질문과 마주하게 되었다.  
-“차선을 본 건 좋다. 그런데 이걸 가지고 실제로 어떻게 이동하지?”
+SCNN visualizes the structure of the lane very well.  
+However, the controller that actually moves the vehicle does not use images.  
+It needs a **geometric target** – a trajectory that answers:
 
-SCNN은 차선의 구조를 시각적으로 잘 표현해준다.  
-하지만 차량을 실제로 움직이는 제어기는 이미지가 아니라  
-“어디로 향해야 하는가”라는 기하학적 목표(trajectory)를 필요로 한다.
+> “Where should the vehicle go next?”
 
-즉,  
-‘보는 것(Perception)’과 ‘움직이는 것(Control)’ 사이에는  
-서로를 연결하는 또 하나의 단계가 필요했다.
-
----
-
-## 11.1 차선 → 주행 경로로 이어지는 사고의 흐름
-
-자율주행 차량이 자연스럽게 움직이려면  
-차량이 따라가야 할 **연속된 목표점(sequence of target points)**이 필요하다.  
-이 사고 흐름은 아주 단순한 질문에서 출발했다.
-
-그래서 우리는 먼저 이렇게 생각했다.
-
-- 자율주행 차량은 결국 “연속된 목표점”을 따라가면서 움직인다.
-- 그 목표점을 어떤 형태로 표현할 것인가가 필요하다.
-- 그렇다면 우리가 주행 경로를 일련의 점(point)으로 표현하면 어떨까?
-
-이 고민 끝에,  
-우리는 자율주행 연구에서 널리 쓰이는 개념인 **Waypoint(경유점)**에 도달했다.  
-즉, 차선 중심을 기반으로 차량이 따라갈 점들을 생성하고,  
-이 점들을 연결하여 실제 주행 경로를 구성하는 방식이다.
+In other words, between **seeing (Perception)** and **moving (Control)**,  
+there must be an intermediate layer that connects the two worlds.
 
 ---
 
-## 11.2 더 중요한 깨달음 – waypoint는 “점”이 아니라 “언어”다
+## 11.1 From Lanes to a Drivable Path – The Thought Process
 
-waypoint를 도입한다는 것은 단순히 점을 찍는 행위가 아니다.  
-우리는 차선이라는 시각적 정보에서  
-차량이 따라갈 수 있는 **좌표 기반의 구조적 표현**을 만들고자 했다.
+For an autonomous vehicle to move naturally,  
+it needs a **sequence of target points** that it can follow over time.
 
-이때 waypoint는 단순한 위치 정보가 아니라,
+This line of thought started from a very simple question:
 
-- 차선의 흐름을 수학적으로 표현하고
-- 차량의 주행 방향을 자연스럽게 이어주며
-- 이후 제어기가 사용할 수 있는 “경로의 언어” 역할을 한다.
+- In the end, an autonomous vehicle moves by following a sequence of target points.  
+- So we need some way to represent those target points.  
+- Then what if we represent the driving path as a sequence of points?
 
-즉, Waypoint는 단순히 점을 찍는 기술이 아니라,  
-차량이 따라갈 수 있는 **‘안정적 경로’를 표현하는 하나의 구조적 언어**다.
+Through this reasoning, we arrived at a concept widely used in autonomous driving research:  
+**waypoints**.
 
-이 언어를 제대로 사용하지 않으면  
-아무리 인지가 정확하고 제어기가 좋아도  
-차량은 안정적으로 움직이지 못한다는 것을 알게 된 것이다.
+We decided to:
+
+- extract the **lane centerline**,  
+- generate points along that center, and  
+- connect these points to form the **actual driving path** the vehicle should follow.
 
 ---
 
-## 11.3 Waypoint 도입 이후의 확장
+## 11.2 A More Important Insight – A Waypoint Is Not Just a “Point,” It Is a “Language”
 
-차선을 본다는 건 ‘인지의 시작’일 뿐,  
-그것만으로는 주행이 만들어지지 않았다.  
-자율주행 차량이 실제로 움직이려면:
+Introducing waypoints is not just about dropping points on a map.  
+What we really wanted was to convert lane information from a visual form into a  
+**coordinate-based structural representation** that a controller can understand.
 
-- 픽셀 기반 인지를  
-- 실제 거리 기반의 좌표로 변환하고  
-- 그 좌표가 연속적이어야 하고  
-- 센서 노이즈에 흔들리지 않는 경로 구조로 표현돼야 했다
+In that sense, a waypoint is not just raw position data. It:
 
-Waypoints를 통해  
-**“차선 → 경로 → 제어 입력”**  
-이라는 흐름이 만들어지자 자연스럽게 다음 단계가 보이기 시작했다.
+- expresses the **flow of the lane** in mathematical form,  
+- naturally links the vehicle’s direction of travel, and  
+- serves as a **“language of the path”** that the controller can read and act on.
 
-- 전체 트랙에서 차량의 정확한 위치는 어떻게 알지? (→ SLAM)
-- 트랙 전체의 경로는 어떻게 만들지? (→ RRT Global Path)
-- 다양한 상황에서 경로를 어떻게 선택하지? (→ Decision, DQN(RL))
-- 장애물을 어떻게 자연스럽게 피해 다시 복귀하지? (→ PH 기반 회피기동)
+So a waypoint is not just a technical trick to place points.  
+It is a **structured language for expressing a stable, drivable path**.
 
-즉, waypoint는 단순한 기술 요소가 아니라  
-우리가 구축하게 되는 **전체 Path Planning 구조의 출발점**이 되었다.
+Once we saw it that way, the conclusion was clear:
+
+Even if perception is accurate and the controller is powerful,  
+if this “path language” is not well structured,  
+the vehicle will not move stably.
+
+---
+
+## 11.3 After Introducing Waypoints – How the Idea Expanded
+
+Lane detection turned out to be just the **starting point of perception**,  
+and by itself it was not enough to produce actual driving behavior.
+
+For an autonomous vehicle to really move, we needed to:
+
+- convert **pixel-based perception**  
+- into **metric, real-world coordinates**,  
+- ensure those coordinates formed a **continuous path**, and  
+- represent that path in a form that is **robust to sensor noise**.
+
+By introducing waypoints, we finally obtained the pipeline:
+
+> **Lane → Path → Control Input**
+
+Once that flow was in place, the next questions naturally emerged:
+
+- How do we know the vehicle’s exact position on the track? → **SLAM**  
+- How do we generate the global path along the entire track? → **RRT Global Path**  
+- How do we select paths under different scenarios? → **Decision Layer, DQN (RL)**  
+- How do we avoid obstacles smoothly and then return to the lane? → **PH-based avoidance maneuvers**
+
+In this sense, waypoints were not just another technical element.  
+They became the **starting point of the entire path planning architecture**  
+that we eventually built.
 
 
 
