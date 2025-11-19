@@ -550,7 +550,7 @@ To this end, we integrated **MATLAB/Simulink** with **Unreal Engine 3**, buildin
 
 could be aligned on a single time axis, closely approximating real driving conditions.
 
-<img src="images/overview1.jpg" width="450" alt="AEB System"/>
+<img src="images/Overview1.png" width="450" alt="AEB System"/>
 
 The essence of AEB design lies not in “braking itself,” but in determining **when** to start braking—that is, in **prediction**.
 
