@@ -1727,6 +1727,10 @@ Adopting TDM allowed our vehicle to answer:
 - “If avoidance is needed, is the left or right side safer?”  
 - “Given current speed, is the available gap sufficient to merge?”
 
+<p align="center">
+  <img src="images/avo1.png" alt="Decision Topology" width="750"/>
+</p>
+
 In other words, TDM provides a systematic framework for answering:
 
 > “Under what conditions should which action be taken?”
