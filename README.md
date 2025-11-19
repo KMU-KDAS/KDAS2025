@@ -314,7 +314,7 @@ To overcome this inefficiency and uncertainty, we searched for a more systematic
 
 ## [5. AEB System Design and Simulation – Matlab_AEB_Unreal](Simulations/Matlab%20-%20Unreal%20Simulation/)
 
-<img src="images/control19.gif" width="450" alt="AEB Braking Response – Simulated Scenario"/>
+<img src="images/AEB.gif" alt="AEB Simulation" width="800"/>
 
 > “If we can move the vehicle, how do we make it stop safely?”
 
