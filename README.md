@@ -789,7 +789,7 @@ As a result, the entire system finally formed a **cohesive, organically integrat
 
 ## 8. Expanding the Goal – Toward Full Autonomous Driving
 
-<img src="images/acc.png" width="450" alt="KDAS – Autonomous Taxi Mission"/>
+<img src="images/acc.png" width="450" alt="Quanser"/>
 
 Our initial goal of building a fully autonomous system did not end with implementing individual functions. During AEB development, we encountered a crucial realization:
 
@@ -808,6 +808,8 @@ We wanted an **objective benchmark**, not just our own satisfaction. Domestic co
 We sought an environment where perception, planning, and control could be viewed as a single system and evaluated against **industrial standards**. We concluded that such a structure was difficult to find domestically and turned our attention abroad.
 
 We discovered the **Quanser Autonomous Car Competition (ACC)**, which provided exactly this type of environment.
+
+<img src="images/quan.jpg" width="450" alt="Quanser Track"/>
 
 The mission theme of ACC is the **autonomous taxi**. This is more than just moving a car; taxis must:
 
