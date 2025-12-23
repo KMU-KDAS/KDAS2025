@@ -16,11 +16,11 @@ Below are the final results showing each module operating in real time. Click on
   <tr>
     <td align="center">
       <img src="images/SCNN1.gif" width="300"><br>
-      <b><a href="Product/Decision/SCNN/">Lane Detection (SCNN)</a></b>
+      <b><a href="Product/Perception/SCNN/">Lane Detection (SCNN)</a></b>
     </td>
     <td align="center">
       <img src="images/yolo10.gif" width="300"><br>
-      <b><a href="Product/Decision/YOLO/">Object Detection (YOLO)</a></b>
+      <b><a href="Product/Perception/YOLO/">Object Detection (YOLO)</a></b>
     </td>
   </tr>
   <tr>
@@ -30,7 +30,7 @@ Below are the final results showing each module operating in real time. Click on
     </td>
     <td align="center">
       <img src="images/SCNN11.gif" width="300"><br>
-      <b><a href="Product/Decision/SCNN/">Lane Tracking Visualization</a></b>
+      <b><a href="Product/Perception/SCNN/">Lane Tracking Visualization</a></b>
     </td>
   </tr>
   <tr>
@@ -40,7 +40,7 @@ Below are the final results showing each module operating in real time. Click on
     </td>
     <td align="center">
       <img src="images/control18.gif" width="300"><br>
-      <b><a href="Product/Decision/SCNN/">Control simulation</a></b>
+      <b><a href="Product/Perception/SCNN/">Control simulation</a></b>
     </td>
   </tr>
 </table>
