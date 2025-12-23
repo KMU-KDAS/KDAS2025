@@ -146,16 +146,13 @@ This improves both **training stability** and **generalization** by preventing o
 ### 4.1 Metrics (Validation)
 Overall **Precision/Recall** were near 1.0 with strong **mAP@0.5** → reliable detection across classes.
 
-<p align="center">
-  <img src="../../../../images/yolo2.png" alt="Validation metrics" width="780"/>
-</p>
 
 ### 4.2 Qualitative Detections (Samples)
 
 <table>
   <tr>
-    <td align="center"><img src="../../../../images/yolo3.jpg" alt="Sample det #1" width="420"/><br/><b>Sample #1</b></td>
-    <td align="center"><img src="../../../../images/yolo4.jpg" alt="Sample det #2" width="420"/><br/><b>Sample #2</b></td>
+    <td align="center"><img src="../../../images/yolo3.jpg" alt="Sample det #1" width="420"/><br/><b>Sample #1</b></td>
+    <td align="center"><img src="../../../images/yolo4.jpg" alt="Sample det #2" width="420"/><br/><b>Sample #2</b></td>
   </tr>
 </table>
 
@@ -167,26 +164,26 @@ Competition schedules shifted, so we first built a **simulation-ready** model:
 - Labeled images captured from **QLabs** scenes.
 
 <p align="center">
-  <img src="../../../../images/yolo5.png" alt="Labeling examples" width="450"/>
+  <img src="../../../images/yolo5.png" alt="Labeling examples" width="450"/>
 </p>
 
 **New training with sim data → metrics:**
 
 <p align="center">
-  <img src="../../../../images/yolo6.png" alt="Sim-trained metrics" width="450"/>
+  <img src="../../../images/yolo6.png" alt="Sim-trained metrics" width="450"/>
 </p>
 
 <table>
   <tr>
-    <td align="center"><img src="../../../../images/yolo7.jpg" alt="Sim det #1" width="420"/><br/><b>QLabs Detection #1</b></td>
-    <td align="center"><img src="../../../../images/yolo8.jpg" alt="Sim det #2" width="420"/><br/><b>QLabs Detection #2</b></td>
+    <td align="center"><img src="../../../images/yolo7.jpg" alt="Sim det #1" width="420"/><br/><b>QLabs Detection #1</b></td>
+    <td align="center"><img src="../../../images/yolo8.jpg" alt="Sim det #2" width="420"/><br/><b>QLabs Detection #2</b></td>
   </tr>
 </table>
 
 <table>
   <tr>
-    <td align="center"><img src="../../../../images/yolo9.gif" alt="Sim clip #1" width="420"/><br/><b>Video (Sim) #1</b></td>
-    <td align="center"><img src="../../../../images/yolo10.gif" alt="Sim clip #2" width="420"/><br/><b>Video (Sim) #2</b></td>
+    <td align="center"><img src="../../../images/yolo9.gif" alt="Sim clip #1" width="420"/><br/><b>Video (Sim) #1</b></td>
+    <td align="center"><img src="../../../images/yolo10.gif" alt="Sim clip #2" width="420"/><br/><b>Video (Sim) #2</b></td>
   </tr>
 </table>
 
@@ -210,7 +207,7 @@ We deployed a ROS2 node to bridge detection → motion:
 After the qualifier, we trained on **QCar camera data** and validated on videos:
 
 <p align="center">
-  <img src="../../../../images/yolo11.gif" alt="QCar driving demo (detections)" width="450"/>
+  <img src="../../../images/yolo11.gif" alt="QCar driving demo (detections)" width="450"/>
 </p>
 
 The model generalized from simulation to reality and **reliably recognized diverse objects**, enabling direct use in:
