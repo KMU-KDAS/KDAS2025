@@ -26,7 +26,7 @@ Below are the final results showing each module operating in real time. Click on
   <tr>
     <td align="center">
       <img src="images/rrt1.png" width="300"><br>
-      <b><a href="Product/Decision/path%20planning/">Path Planning (RRT + DQN)</a></b>
+      <b><a href="Product/Decision/Path%20Planning/">Path Planning (RRT + DQN)</a></b>
     </td>
     <td align="center">
       <img src="images/SCNN11.gif" width="300"><br>
