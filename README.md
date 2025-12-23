@@ -40,7 +40,7 @@ Below are the final results showing each module operating in real time. Click on
     </td>
     <td align="center">
       <img src="images/control18.gif" width="300"><br>
-      <b><a href="Product/Perception/SCNN/">Control simulation</a></b>
+      <b><a href="Product/Control/Steering Control & Breaking Control/">Control simulation</a></b>
     </td>
   </tr>
 </table>
@@ -158,21 +158,21 @@ AMCL suffered from drift and map dependency, while Cartographer offered:
   <tr>
     <td align="center">
       <img src="images/SCNN10.gif" width="260"><br>
-      <b><a href="Product/Decision/SCNN/">SCNN – Lane Detection</a></b>
+      <b><a href="Product/Perception/SCNN/">SCNN – Lane Detection</a></b>
     </td>
     <td align="center">
       <img src="images/SCNN11.gif" width="260"><br>
-      <b><a href="Product/Decision/SCNN/">SCNN – Lane Tracking</a></b>
+      <b><a href="Product/Perception/SCNN/">SCNN – Lane Tracking</a></b>
     </td>
   </tr>
   <tr>
     <td align="center">
       <img src="images/yolo9.gif" width="260"><br>
-      <b><a href="Product/Decision/YOLO/">YOLOv8s – Object Detection</a></b>
+      <b><a href="Product/Perception/YOLO/">YOLOv8s – Object Detection</a></b>
     </td>
     <td align="center">
       <img src="images/yolo11.gif" width="260"><br>
-      <b><a href="Product/Decision/YOLO/">YOLOv8s – Traffic Light & Sign</a></b>
+      <b><a href="Product/Perception/YOLO/">YOLOv8s – Traffic Light & Sign</a></b>
     </td>
   </tr>
 </table>
@@ -199,11 +199,11 @@ This pipeline enabled proactive control decisions and operated at real-time fram
   <tr>
     <td align="center">
       <img src="images/rrt1.png" width="260"><br>
-      <b><a href="Product/Decision/path%20planning/RRT/">RRT </a></b>
+      <b><a href="Product/Decision/Path%20Planning/RRT/">RRT </a></b>
     </td>
     <td align="center">
       <img src="images/rrt10.png" width="260"><br>
-      <b><a href="Product/Decision/path%20planning/">RRT </a></b>
+      <b><a href="Product/Decision/Path%20Planning/">RRT </a></b>
     </td>
   </tr>
 </table>
