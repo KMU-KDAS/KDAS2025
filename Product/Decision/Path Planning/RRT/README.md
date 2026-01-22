@@ -20,7 +20,8 @@ In other words, while embracing the stochastic exploration characteristic of RRT
 
 ## 2. Theoretical Background of RRT
 
-The core idea of RRT is to randomly sample a point in the search space, find the nearest node in the existing tree, and extend (steer) the tree from that node toward the sample by a small step Δq.  
+The core idea of RRT is to randomly sample a point in the search space, find the nearest node in the existing tree, and extend (steer) the tree from that node toward the sample by a small step Δq.
+
 Repeating this process rapidly expands the tree throughout the space until it reaches the goal region.
 
 ---
@@ -28,20 +29,23 @@ Repeating this process rapidly expands the tree throughout the space until it re
 ### (1) Random Sampling
 
 $$
-q_{\text{rand}} \sim U(Q)
+q_{\mathrm{rand}} \sim U(Q)
 $$
 
-A random point \( q_{\text{rand}} \) is sampled within the search space \( Q \).
+A random point `q_rand` is sampled within the search space `Q`.
 
 ---
 
 ### (2) Nearest-Node Search
 
 $$
-q_{\text{near}} = \underset{q_i \in T}{\arg\min}\, \text{dist}(q_i, q_{\text{rand}})
+q_{\mathrm{near}} =
+\underset{q_i \in T}{\arg\min}\,
+\mathrm{dist}(q_i, q_{\mathrm{rand}})
 $$
 
-Among all nodes currently in the tree, the one with the smallest distance to \( q_{\text{rand}} \) is selected.  
+Among all nodes currently in the tree, the node with the smallest distance to `q_rand` is selected.
+
 The distance metric can be Euclidean or any metric suitable for the configuration space.
 
 ---
@@ -49,46 +53,54 @@ The distance metric can be Euclidean or any metric suitable for the configuratio
 ### (3) Tree Extension (Steer Function)
 
 $$
-q_{\text{new}} = q_{\text{near}} + 
-\frac{(q_{\text{rand}} - q_{\text{near}})}{\|q_{\text{rand}} - q_{\text{near}}\|} \cdot \varepsilon
+q_{\mathrm{new}} =
+q_{\mathrm{near}} +
+\frac{q_{\mathrm{rand}} - q_{\mathrm{near}}}
+{\lVert q_{\mathrm{rand}} - q_{\mathrm{near}} \rVert}
+\cdot \varepsilon
 $$
 
-From \( q_{\text{near}} \), a new point \( q_{\text{new}} \) is created by moving a step \( \varepsilon \) toward \( q_{\text{rand}} \).  
-(In other words, one incremental step in the direction of \( q_{\text{rand}} \).)
+From `q_near`, a new point `q_new` is created by moving a step `ε` toward `q_rand`.
+
+In other words, one incremental step is taken in the direction of the sampled point.
 
 ---
 
 ### (4) Collision Check
 
 $$
-q_{\text{new}} \in C_{\text{free}}
+q_{\mathrm{new}} \in C_{\mathrm{free}}
 $$
 
-Verify that \( q_{\text{new}} \) lies within the free configuration space \( C_{\text{free}} \).  
-If it collides with any obstacle, discard \( q_{\text{new}} \).
+Verify that `q_new` lies within the free configuration space `C_free`.
+
+If it violates the corridor boundary, discard `q_new`.
 
 **Segment-based collision test**
 
 $$
-\text{CollisionFree}(q_{\text{near}}, q_{\text{new}}) =
+\mathrm{CollisionFree}(q_{\mathrm{near}}, q_{\mathrm{new}}) =
 \begin{cases}
-\text{True}, & \text{if } (1-s)q_{\text{near}} + s q_{\text{new}} \notin O,\; \forall s \in [0,1] \\
-\text{False}, & \text{otherwise}
+\mathrm{True},
+& \text{if } (1-s)q_{\mathrm{near}} + s q_{\mathrm{new}} \notin O,
+\ \forall s \in [0,1] \\
+\mathrm{False}, & \text{otherwise}
 \end{cases}
 $$
 
-- \( O \): obstacle region  
-- If no point on the segment between \( q_{\text{near}} \) and \( q_{\text{new}} \) lies inside \( O \) for all \( s \in [0,1] \), the motion is collision-free.
+- `O`: invalid region (outside the corridor)
+- If no point on the segment between `q_near` and `q_new` lies inside `O` for all `s ∈ [0,1]`,
+  the motion is considered valid.
 
 ---
 
 ### (5) Tree Expansion and Node Addition
 
 $$
-T = T \cup \{ (q_{\text{near}}, q_{\text{new}}) \}
+T = T \cup \{ (q_{\mathrm{near}}, q_{\mathrm{new}}) \}
 $$
 
-If collision-free, add the new node and edge to the tree.
+If valid, add the new node and edge to the tree.
 
 ---
 
