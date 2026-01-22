@@ -294,7 +294,7 @@ while slightly shortening the total path length, thereby improving overall **eff
 
 ### 6.3 Global Path Visualization
 
-<p align="center"><img src="../../../../images/rrt12.png" width="720"/></p>
+<p align="center"><img src="../../../../images/rrt12.png" width="300"/></p>
 
 The figure above shows the **global path visualization** based on the entire track.  
 To make the path clearer, center coordinates of all RRT-based segment results were used.  
