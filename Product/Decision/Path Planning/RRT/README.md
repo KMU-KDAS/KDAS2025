@@ -237,8 +237,8 @@ and the red line indicates the **final connected path**.
 ### 5.3 Result Analysis and Limitations
 
 <table><tr>
-<td><img src="../../../../images/rrt7.png" width="360"/></td>
 <td><img src="../../../../images/rrt8.png" width="360"/></td>
+<td><img src="../../../../images/rrt9.png" width="360"/></td>
 </tr></table>
 
 Through segment-wise RRT generation, the algorithm successfully produced **feasible paths** that reached the goal quickly.  
@@ -274,8 +274,8 @@ Algorithm: Path Smoothing
 ### 6.2 Comparison Before and After Smoothing
 
 <table><tr>
-<td><img src="../../../../images/rrt9.png" width="360"/></td>
 <td><img src="../../../../images/rrt10.png" width="360"/></td>
+<td><img src="../../../../images/rrt11.png" width="360"/></td>
 </tr></table>
 
 Left: Raw RRT result (discontinuous path)  
@@ -294,7 +294,7 @@ while slightly shortening the total path length, thereby improving overall **eff
 
 ### 6.3 Global Path Visualization
 
-<p align="center"><img src="../../../../images/rrt11.png" width="720"/></p>
+<p align="center"><img src="../../../../images/rrt12.png" width="720"/></p>
 
 The figure above shows the **global path visualization** based on the entire track.  
 To make the path clearer, center coordinates of all RRT-based segment results were used.  
@@ -322,4 +322,3 @@ The resulting **Global Path** served as the input to a subsequent **DQN (Deep Q-
 Ultimately, this approach demonstrates the potential for organically linking **sampling-based global planning**  
 with **learning-based decision modules**, improving both the **efficiency** and **practicality** of autonomous path planning.
 
-<p align="center"><img src="../../../../images/rrt12.png" width="720"/></p>
