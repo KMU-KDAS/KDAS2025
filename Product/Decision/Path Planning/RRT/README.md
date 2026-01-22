@@ -186,7 +186,7 @@ for (s, e) in segments_idx:
 <table><tr>
 <td><img src="../../../../images/rrt2.png" width="320"/></td>
 <td><img src="../../../../images/rrt3.png" width="320"/></td>
-<td><img src="../../../../images/rrt3.png" width="320"/></td>
+<td><img src="../../../../images/rrt4.png" width="320"/></td>
 </tr></table>
 
 The above figures show **Free-Space modeling results** for selected portions of the track.  
@@ -221,9 +221,9 @@ Algorithm: Rapidly-exploring Random Tree (RRT)
 ### 5.2 RRT Execution Results
 
 <table><tr>
-<td><img src="../../../../images/rrt4.png" width="320"/></td>
 <td><img src="../../../../images/rrt5.png" width="320"/></td>
 <td><img src="../../../../images/rrt6.png" width="320"/></td>
+<td><img src="../../../../images/rrt7.png" width="320"/></td>
 </tr></table>
 
 The figures above visualize **RRT-based path generation** for several different segments.  
